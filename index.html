@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BRATEN — The Overhead Flame Grill. No Flare-Ups. No Charcoal. Just Fire.</title>
+<meta name="description" content="BRATEN is a portable overhead-flame gas grill. Fire from above means zero flare-ups, no smoke clouds, and steakhouse sear anywhere — tabletop, patio, or campsite.">
+<meta property="og:title" content="BRATEN — Fire From Above">
+<meta property="og:description" content="The portable overhead-flame gas grill. Zero flare-ups. Auto-rotating rotisserie. Sets up in minutes.">
+<meta property="og:image" content="img/hero.jpg">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #131313;
+    --ink-soft: #3d3a37;
+    --muted: #8a847e;
+    --paper: #faf8f5;
+    --paper-warm: #f3efe9;
+    --line: #e6e0d8;
+    --flame: #f04e23;
+    --flame-deep: #c93a13;
+    --char: #1a1917;
+    --char-2: #232120;
+    --white: #ffffff;
+    --radius: 18px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, .display { font-family: 'Archivo', 'Inter', sans-serif; letter-spacing: -0.02em; }
+  img { max-width: 100%; display: block; }
+  a { color: inherit; text-decoration: none; }
+  .wrap { max-width: 1160px; margin: 0 auto; padding: 0 24px; }
+
+  /* ---------- Nav ---------- */
+  .nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(250,248,245,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav-inner {
+    display: flex; align-items: center; justify-content: space-between;
+    height: 68px;
+  }
+  .logo { font-family: 'Archivo'; font-weight: 900; font-size: 24px; letter-spacing: 0.04em; }
+  .logo span { color: var(--flame); }
+  .nav-links { display: flex; gap: 32px; font-size: 14px; font-weight: 500; color: var(--ink-soft); }
+  .nav-links a:hover { color: var(--flame); }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: 'Archivo'; font-weight: 700; font-size: 15px;
+    padding: 13px 26px; border-radius: 999px;
+    background: var(--ink); color: var(--white);
+    transition: transform .15s ease, background .15s ease;
+    border: none; cursor: pointer;
+  }
+  .btn:hover { background: var(--flame); transform: translateY(-1px); }
+  .btn.flame { background: var(--flame); }
+  .btn.flame:hover { background: var(--flame-deep); }
+  .btn.ghost { background: transparent; color: var(--white); border: 1.5px solid rgba(255,255,255,0.4); }
+  .btn.ghost:hover { border-color: var(--white); background: rgba(255,255,255,0.08); transform: none; }
+  .btn.sm { padding: 10px 20px; font-size: 14px; }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    background: var(--char);
+    color: var(--white);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-inner {
+    display: grid; grid-template-columns: 1.05fr 1fr; gap: 48px;
+    align-items: center; padding: 88px 0 96px;
+  }
+  .kicker {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-size: 12.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--flame); margin-bottom: 22px;
+  }
+  .kicker::before { content: ""; width: 26px; height: 2px; background: var(--flame); }
+  .hero h1 {
+    font-size: clamp(44px, 6vw, 76px);
+    font-weight: 900; line-height: 1.02; margin-bottom: 24px;
+  }
+  .hero h1 em { font-style: normal; color: var(--flame); }
+  .hero p.lead {
+    font-size: 19px; color: rgba(255,255,255,0.72); max-width: 480px; margin-bottom: 36px;
+  }
+  .hero-ctas { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+  .hero-img {
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.45);
+    transform: rotate(1.2deg);
+  }
+  .hero-note { margin-top: 18px; font-size: 13.5px; color: rgba(255,255,255,0.45); }
+  .hero-glow {
+    position: absolute; width: 720px; height: 720px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(240,78,35,0.22), transparent 65%);
+    top: -200px; right: -160px; pointer-events: none;
+  }
+
+  /* ---------- Ticker ---------- */
+  .ticker {
+    background: var(--flame); color: var(--white);
+    overflow: hidden; white-space: nowrap; padding: 13px 0;
+    font-family: 'Archivo'; font-weight: 700; font-size: 14.5px; letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .ticker-track { display: inline-block; animation: slide 28s linear infinite; }
+  .ticker span { margin: 0 26px; }
+  @keyframes slide { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+  /* ---------- Sections ---------- */
+  section { padding: 96px 0; }
+  .sec-head { max-width: 640px; margin-bottom: 56px; }
+  .sec-head.center { margin-left: auto; margin-right: auto; text-align: center; }
+  .sec-head h2 { font-size: clamp(30px, 4vw, 46px); font-weight: 800; line-height: 1.1; margin: 14px 0 16px; }
+  .sec-head p { color: var(--muted); font-size: 17px; }
+
+  /* Why overhead */
+  .why { background: var(--paper); }
+  .why-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .why-card {
+    background: var(--white); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 34px 30px;
+  }
+  .why-card .num {
+    font-family: 'Archivo'; font-weight: 900; font-size: 15px; color: var(--flame);
+    letter-spacing: 0.1em; margin-bottom: 18px; display: block;
+  }
+  .why-card h3 { font-size: 21px; font-weight: 700; margin-bottom: 10px; }
+  .why-card p { color: var(--muted); font-size: 15px; }
+
+  .why-visual { margin-top: 22px; border-radius: var(--radius); overflow: hidden; position: relative; }
+  .why-visual img { width: 100%; max-height: 420px; object-fit: cover; }
+  .why-visual .cap {
+    position: absolute; left: 18px; bottom: 16px;
+    font-family: 'Archivo'; font-weight: 700; font-size: 13px; letter-spacing: 0.06em;
+    text-transform: uppercase; padding: 7px 14px; border-radius: 999px;
+    background: rgba(19,19,19,0.72); color: var(--white); backdrop-filter: blur(6px);
+  }
+
+  /* Lineup */
+  .lineup { background: var(--char); color: var(--white); }
+  .lineup .sec-head p { color: rgba(255,255,255,0.6); }
+  .prod-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .prod {
+    background: var(--char-2); border: 1px solid rgba(255,255,255,0.09);
+    border-radius: var(--radius); overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .prod-img { aspect-ratio: 16/10; overflow: hidden; background: var(--white); }
+  .prod-img img { width: 100%; height: 100%; object-fit: contain; transition: transform .4s ease; }
+  .prod:hover .prod-img img { transform: scale(1.04); }
+  .prod-body { padding: 30px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+  .prod-tag {
+    align-self: flex-start; font-size: 11.5px; font-weight: 700; letter-spacing: 0.12em;
+    text-transform: uppercase; padding: 5px 12px; border-radius: 999px;
+    background: rgba(240,78,35,0.16); color: #ff7a4e;
+  }
+  .prod h3 { font-size: 26px; font-weight: 800; margin-top: 8px; }
+  .prod .desc { color: rgba(255,255,255,0.6); font-size: 15px; flex: 1; }
+  .prod ul { list-style: none; margin: 14px 0 20px; display: grid; gap: 8px; }
+  .prod li { font-size: 14.5px; color: rgba(255,255,255,0.78); padding-left: 22px; position: relative; }
+  .prod li::before { content: "✓"; position: absolute; left: 0; color: var(--flame); font-weight: 700; }
+  .prod-buy { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+  .price { font-family: 'Archivo'; font-weight: 800; font-size: 28px; }
+  .price small { font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.5); display: block; }
+
+  /* Features */
+  .features { background: var(--paper-warm); }
+  .feat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .feat {
+    background: var(--white); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 30px 28px;
+  }
+  .feat .ico {
+    width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center;
+    background: #fdeae3; color: var(--flame); font-size: 22px; margin-bottom: 18px;
+  }
+  .feat h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+  .feat p { color: var(--muted); font-size: 14.5px; }
+
+  /* Gallery */
+  .gallery { background: var(--char); color: var(--white); padding-bottom: 110px; }
+  .gal-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .gal-item { border-radius: 14px; overflow: hidden; position: relative; aspect-ratio: 4/3; }
+  .gal-item img { width: 100%; height: 100%; object-fit: cover; transition: transform .4s ease; }
+  .gal-item:hover img { transform: scale(1.05); }
+  .gal-item .cap {
+    position: absolute; left: 14px; bottom: 12px;
+    font-family: 'Archivo'; font-weight: 700; font-size: 13px; letter-spacing: 0.06em;
+    text-transform: uppercase; padding: 6px 12px; border-radius: 999px;
+    background: rgba(19,19,19,0.72); backdrop-filter: blur(6px);
+  }
+
+  /* Specs */
+  .specs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: start; }
+  .specs table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  .specs td { padding: 15px 4px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .specs td:first-child { color: var(--muted); width: 42%; font-weight: 500; }
+  .specs td:last-child { font-weight: 600; }
+  .specs-img { border-radius: var(--radius); overflow: hidden; position: sticky; top: 100px; }
+
+  /* FAQ */
+  .faq { background: var(--paper-warm); }
+  .faq-list { max-width: 760px; margin: 0 auto; display: grid; gap: 12px; }
+  details {
+    background: var(--white); border: 1px solid var(--line); border-radius: 14px;
+    padding: 22px 26px;
+  }
+  summary {
+    font-family: 'Archivo'; font-weight: 700; font-size: 16.5px; cursor: pointer;
+    list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 16px;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: "+"; font-size: 22px; color: var(--flame); font-weight: 500; flex-shrink: 0; }
+  details[open] summary::after { content: "–"; }
+  details p { margin-top: 12px; color: var(--muted); font-size: 15px; }
+
+  /* CTA / email */
+  .cta { background: var(--char); color: var(--white); text-align: center; }
+  .cta h2 { font-size: clamp(32px, 4.5vw, 52px); font-weight: 900; margin-bottom: 16px; }
+  .cta h2 em { font-style: normal; color: var(--flame); }
+  .cta p { color: rgba(255,255,255,0.6); max-width: 520px; margin: 0 auto 34px; }
+  .email-form { display: flex; gap: 10px; max-width: 460px; margin: 0 auto; }
+  .email-form input {
+    flex: 1; padding: 15px 20px; border-radius: 999px; border: 1.5px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.06); color: var(--white); font-size: 15px; font-family: 'Inter';
+    outline: none;
+  }
+  .email-form input::placeholder { color: rgba(255,255,255,0.4); }
+  .email-form input:focus { border-color: var(--flame); }
+  .form-note { margin-top: 16px; font-size: 13px; color: rgba(255,255,255,0.35); }
+
+  /* Footer */
+  footer { background: #0f0e0d; color: rgba(255,255,255,0.55); padding: 52px 0 40px; font-size: 14px; }
+  .foot-inner { display: flex; justify-content: space-between; align-items: flex-start; gap: 32px; flex-wrap: wrap; }
+  .foot-logo { font-family: 'Archivo'; font-weight: 900; font-size: 22px; color: var(--white); letter-spacing: 0.04em; }
+  .foot-links { display: flex; gap: 26px; }
+  .foot-links a:hover { color: var(--flame); }
+  .foot-bottom { margin-top: 36px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.08); font-size: 12.5px; color: rgba(255,255,255,0.3); }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .hero-inner { grid-template-columns: 1fr; padding: 56px 0 64px; }
+    .why-grid, .feat-grid, .gal-grid { grid-template-columns: 1fr 1fr; }
+    .prod-grid, .specs-grid { grid-template-columns: 1fr; }
+    .nav-links { display: none; }
+    section { padding: 68px 0; }
+  }
+  @media (max-width: 560px) {
+    .why-grid, .feat-grid, .gal-grid { grid-template-columns: 1fr; }
+    .email-form { flex-direction: column; }
+    .hero h1 { font-size: 42px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== NAV ===== -->
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a href="#" class="logo">BRATEN<span>.</span></a>
+    <nav class="nav-links">
+      <a href="#why">Why Overhead Flame</a>
+      <a href="#lineup">Grills</a>
+      <a href="#features">Features</a>
+      <a href="#specs">Specs</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <a class="btn sm" href="https://www.amazon.com/" target="_blank" rel="noopener">Buy on Amazon</a>
+  </div>
+</header>
+
+<!-- ===== HERO ===== -->
+<div class="hero">
+  <div class="hero-glow"></div>
+  <div class="wrap hero-inner">
+    <div>
+      <span class="kicker">Portable Overhead-Flame Gas Grill</span>
+      <h1>Fire from <em>above.</em><br>Flavor like nowhere else.</h1>
+      <p class="lead">BRATEN flips grilling upside down. The flame sits on top, so fat drips away from the fire — zero flare-ups, no smoke clouds, and a perfect steakhouse crust every single time.</p>
+      <div class="hero-ctas">
+        <a class="btn flame" href="https://www.amazon.com/" target="_blank" rel="noopener">Shop on Amazon →</a>
+        <a class="btn ghost" href="#why">How it works</a>
+      </div>
+      <p class="hero-note">★ 4.9/5 from 3,000+ reviews&nbsp;&nbsp;·&nbsp;&nbsp;50,000+ sold in Korea&nbsp;&nbsp;·&nbsp;&nbsp;1-year warranty</p>
+    </div>
+    <div>
+      <div class="hero-img"><img src="img/hero.jpg" alt="BRATEN overhead-flame grill loaded with steak, shrimp and vegetables on a kitchen table"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TICKER ===== -->
+<div class="ticker">
+  <div class="ticker-track">
+    <span>Zero flare-ups</span><span>◆</span><span>50,000+ sold in Korea</span><span>◆</span><span>No charcoal, no cords</span><span>◆</span><span>Auto-rotating rotisserie</span><span>◆</span><span>Indoor-friendly, low smoke</span><span>◆</span><span>Zero flare-ups</span><span>◆</span><span>50,000+ sold in Korea</span><span>◆</span><span>No charcoal, no cords</span><span>◆</span><span>Auto-rotating rotisserie</span><span>◆</span><span>Indoor-friendly, low smoke</span><span>◆</span>
+  </div>
+</div>
+
+<!-- ===== WHY ===== -->
+<section class="why" id="why">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="kicker">The Braten Method</span>
+      <h2>Every grill you've owned has the fire in the wrong place.</h2>
+      <p>Conventional grills burn from below — so dripping fat hits the flame, ignites, and coats your food in soot and burnt-grease smoke. BRATEN puts the burner overhead. Physics does the rest.</p>
+      <p style="margin-top:14px; font-size:15px;">Built on 30 years of industrial burner engineering, BRATEN launched as Korea's first smokeless direct-flame gas grill — and became the country's #1 grill in kitchen appliances.</p>
+    </div>
+    <div class="why-grid">
+      <div class="why-card">
+        <span class="num">01</span>
+        <h3>Zero flare-ups. Ever.</h3>
+        <p>Fat drips down into the tray — never into the flame. No fireballs, no charring accidents, no acrid smoke. Just clean, radiant searing heat from above.</p>
+      </div>
+      <div class="why-card">
+        <span class="num">02</span>
+        <h3>Steakhouse crust, juicy center</h3>
+        <p>Overhead infrared-style heat sears the surface fast and locks juices in — the same top-down broiler principle premium steakhouses use, in a grill the size of a toaster.</p>
+      </div>
+      <div class="why-card">
+        <span class="num">03</span>
+        <h3>Two zones, one flame</h3>
+        <p>Sear on the height-adjustable lower rack while the top plate grills vegetables or keeps sides warm. One burner, a full course.</p>
+      </div>
+    </div>
+    <div class="why-visual">
+      <img src="img/burner.jpg" alt="Close-up of the BRATEN overhead burner glowing red-hot">
+      <span class="cap">The overhead radiant burner — the heart of every BRATEN</span>
+    </div>
+  </div>
+</section>
+
+<!-- ===== LINEUP ===== -->
+<section class="lineup" id="lineup">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="kicker">The Lineup</span>
+      <h2>Two grills. One obsession.</h2>
+      <p>Both run on a standard butane canister — no charcoal bags, no propane tanks, no power cords.</p>
+    </div>
+    <div class="prod-grid">
+      <div class="prod">
+        <div class="prod-img"><img src="img/pro-kit.jpg" alt="BRATEN PRO full kit — grill, carry bag, rotisserie skewers and manual"></div>
+        <div class="prod-body">
+          <span class="prod-tag">Best Seller</span>
+          <h3>BRATEN PRO</h3>
+          <p class="desc">The full experience — includes the battery-powered auto-rotating rotisserie kit and carry bag for perfect self-basting roasts anywhere.</p>
+          <ul>
+            <li>Auto-rotating rotisserie skewer set</li>
+            <li>Dedicated carry bag included</li>
+            <li>Height-adjustable dual cooking racks</li>
+            <li>Precision flame dial</li>
+          </ul>
+          <div class="prod-buy">
+            <div class="price">$249<small>Free US shipping</small></div>
+            <a class="btn flame" href="https://www.amazon.com/" target="_blank" rel="noopener">Buy on Amazon</a>
+          </div>
+        </div>
+      </div>
+      <div class="prod">
+        <div class="prod-img"><img src="img/core-unit.jpg" alt="BRATEN CORE grill unit with overhead burner hood and lower cooking tray"></div>
+        <div class="prod-body">
+          <span class="prod-tag" style="background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.7)">Essential</span>
+          <h3>BRATEN CORE</h3>
+          <p class="desc">The same overhead-flame engine without the rotisserie kit. Everything you need for flawless tabletop grilling.</p>
+          <ul>
+            <li>Full overhead-flame grill system</li>
+            <li>Height-adjustable dual cooking racks</li>
+            <li>Precision flame dial</li>
+            <li>Rotisserie kit sold separately</li>
+          </ul>
+          <div class="prod-buy">
+            <div class="price">$219<small>Free US shipping</small></div>
+            <a class="btn flame" href="https://www.amazon.com/" target="_blank" rel="noopener">Buy on Amazon</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FEATURES ===== -->
+<section class="features" id="features">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="kicker">Engineered for real cooking</span>
+      <h2>Small footprint. Serious hardware.</h2>
+    </div>
+    <div class="feat-grid">
+      <div class="feat">
+        <div class="ico">🔄</div>
+        <h3>Auto-rotating rotisserie</h3>
+        <p>Battery-powered skewers turn continuously so roasts self-baste in their own juices — crackling outside, tender inside. No babysitting.</p>
+      </div>
+      <div class="feat">
+        <div class="ico">📏</div>
+        <h3>Adjustable rack height</h3>
+        <p>Slide the lower rack closer for a hard sear or lower for gentle roasting. Total control over distance-to-flame.</p>
+      </div>
+      <div class="feat">
+        <div class="ico">🔥</div>
+        <h3>Precision flame dial</h3>
+        <p>From a whisper of warmth to full searing power, dial in exactly the heat the cut demands.</p>
+      </div>
+      <div class="feat">
+        <div class="ico">🧼</div>
+        <h3>Tool-free teardown</h3>
+        <p>Every cooking surface pops off by hand in seconds. Racks and drip tray wash like dishes — no wire brushes, no scraping ritual.</p>
+      </div>
+      <div class="feat">
+        <div class="ico">🥫</div>
+        <h3>Runs on butane canisters</h3>
+        <p>Standard 8-oz butane canisters — sold at any grocery or camping store. No charcoal, no lighter fluid, no propane tank, no outlet.</p>
+      </div>
+      <div class="feat">
+        <div class="ico">🎒</div>
+        <h3>Grab-and-go portable</h3>
+        <p>Folds down compact and slips into its carry bag. Kitchen counter tonight, tailgate on Saturday, campsite next month.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== GALLERY ===== -->
+<section class="gallery">
+  <div class="wrap">
+    <div class="sec-head center">
+      <span class="kicker">Life with BRATEN</span>
+      <h2>If fire makes it better, BRATEN makes it perfect.</h2>
+    </div>
+    <div class="gal-grid">
+      <div class="gal-item"><img src="img/food-grill.jpg" alt="Pork belly, shrimp and vegetables searing on the BRATEN grill"><span class="cap">The daily sear</span></div>
+      <div class="gal-item"><img src="img/pork-shrimp.jpg" alt="Thick-cut pork belly and shrimp fresh off the grill"><span class="cap">Pork belly &amp; shrimp</span></div>
+      <div class="gal-item"><img src="img/table-scene.jpg" alt="BRATEN grill at the center of a set dining table"><span class="cap">Table-side grilling</span></div>
+      <div class="gal-item"><img src="img/apron-cooking.jpg" alt="Home cook in a BRATEN apron grilling indoors"><span class="cap">Weeknight dinners</span></div>
+      <div class="gal-item"><img src="img/rotisserie-detail.jpg" alt="Close-up of the auto-rotating rotisserie skewers"><span class="cap">Auto rotisserie</span></div>
+      <div class="gal-item"><img src="img/cleaning.jpg" alt="Rinsing a BRATEN cooking plate under the kitchen faucet"><span class="cap">5-minute cleanup</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SPECS ===== -->
+<section class="specs" id="specs">
+  <div class="wrap specs-grid">
+    <div>
+      <div class="sec-head">
+        <span class="kicker">Specifications</span>
+        <h2>The fine print, minus the boring.</h2>
+      </div>
+      <table>
+        <tr><td>Heating</td><td>Overhead radiant + convection burner — 30 years of burner engineering</td></tr>
+        <tr><td>Fuel</td><td>Standard 8 oz (227 g) butane canister</td></tr>
+        <tr><td>Cooking zones</td><td>3-in-1: main grill, top sub-grill, rotisserie</td></tr>
+        <tr><td>Rotisserie</td><td>Auto-rotation, 4× AA batteries (PRO / sold separately for CORE)</td></tr>
+        <tr><td>Rack height</td><td>Multi-position, adjustable while cooking</td></tr>
+        <tr><td>Storage</td><td>Ultra-slim — stows in just 6.1 in (15.6 cm) of shelf space</td></tr>
+        <tr><td>Cleanup</td><td>3-step tool-free teardown; plates &amp; drip tray are dishwasher-safe</td></tr>
+        <tr><td>In the box (PRO)</td><td>Grill, rotisserie skewer set, drip tray, carry bag, manual</td></tr>
+        <tr><td>Warranty</td><td>1 year, US-based support</td></tr>
+      </table>
+    </div>
+    <div class="specs-img"><img src="img/portable.jpg" alt="BRATEN folded flat on a kitchen counter next to a butane canister"></div>
+  </div>
+</section>
+
+<!-- ===== FAQ ===== -->
+<section class="faq" id="faq">
+  <div class="wrap">
+    <div class="sec-head center">
+      <span class="kicker">Questions</span>
+      <h2>Asked &amp; answered.</h2>
+    </div>
+    <div class="faq-list">
+      <details>
+        <summary>Can I really use it indoors?</summary>
+        <p>BRATEN produces dramatically less smoke than bottom-flame grills because fat never touches the fire. Like any gas appliance, use it in a well-ventilated space — under a range hood or with a window open. For fully enclosed spaces, always follow local regulations and the safety manual.</p>
+      </details>
+      <details>
+        <summary>Where do I buy butane canisters?</summary>
+        <p>The same 8-oz butane canisters used for portable camp stoves — available at grocery stores, hardware stores, camping retailers, and Amazon, usually for $2–4 each. One canister delivers roughly 1.5–2 hours of grilling.</p>
+      </details>
+      <details>
+        <summary>What's the difference between PRO and CORE?</summary>
+        <p>Identical grill engine. PRO adds the battery-powered auto-rotating rotisserie kit and the carry bag. If you ever want to roast whole cuts, chicken, or coffee beans, get the PRO — the rotisserie is the party trick everyone remembers.</p>
+      </details>
+      <details>
+        <summary>How do I clean it?</summary>
+        <p>Everything that touches food removes by hand in three steps — no tools. The cooking plates and drip tray are dishwasher-safe, or wash with regular dish soap. Total cleanup time is about five minutes.</p>
+      </details>
+      <details>
+        <summary>Does it ship to my country?</summary>
+        <p>We currently ship across the United States via Amazon. Global shipping is rolling out — join the list below and we'll email you when BRATEN lands in your region.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CTA ===== -->
+<section class="cta">
+  <div class="wrap">
+    <h2>Grill season is <em>every season.</em></h2>
+    <p>Get launch pricing, recipes, and restock alerts. No spam — we're too busy grilling.</p>
+    <form class="email-form" action="#" onsubmit="event.preventDefault(); this.querySelector('input').value=''; alert('Thanks! You\'re on the list.');">
+      <input type="email" placeholder="you@email.com" required>
+      <button class="btn flame" type="submit">Join the list</button>
+    </form>
+    <p class="form-note">By subscribing you agree to receive BRATEN marketing emails. Unsubscribe anytime.</p>
+  </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer>
+  <div class="wrap">
+    <div class="foot-inner">
+      <div>
+        <div class="foot-logo">BRATEN<span style="color:var(--flame)">.</span></div>
+        <p style="margin-top:10px; max-width:300px;">The portable overhead-flame gas grill. Designed in Seoul. Loved everywhere fire meets food.</p>
+      </div>
+      <nav class="foot-links">
+        <a href="#why">How it works</a>
+        <a href="#lineup">Grills</a>
+        <a href="#specs">Specs</a>
+        <a href="#faq">FAQ</a>
+        <a href="mailto:hello@braten.com">Contact</a>
+      </nav>
+    </div>
+    <div class="foot-bottom">© 2026 BRATEN. All rights reserved. · Privacy Policy · Terms of Service · braten.co.kr (Korea store)</div>
+  </div>
+</footer>
+
+</body>
+</html>
