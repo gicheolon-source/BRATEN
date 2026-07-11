@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BRATEN · 국내 운영 대시보드</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --flame:#f04e23;    /* BRATEN 시그니처 화염 오렌지 */
+  --flame-soft:#ff7a4e;
+  --char:#1a1917;     /* 차콜 (사이드바) */
+  --ink:#131313;
+  --paper:#faf8f5;    /* 크림 배경 */
+  --card:#ffffff;
+  --line:#e6e0d8;
+  --muted:#8a847e;
+  --text:#131313;
+  --green:#2ec36e;
+  --amber:#ffb020;
+  --red:#e5484d;
+  --blue:#3b82f6;
+  --purple:#8b5cf6;
+  --shadow:0 1px 3px rgba(30,20,10,.06),0 1px 2px rgba(30,20,10,.04);
+  --radius:14px;
+}
+body{font-family:'Pretendard','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',sans-serif;background:var(--paper);color:var(--text);display:flex;height:100vh;overflow:hidden;-webkit-font-smoothing:antialiased}
+h1,h2,h3,.display{font-family:'Archivo','Pretendard',sans-serif;letter-spacing:-.02em}
+
+/* ── Sidebar ── */
+.sidebar{width:232px;min-width:232px;background:var(--char);display:flex;flex-direction:column;height:100vh;overflow-y:auto}
+.sb-brand{padding:22px 20px 16px;border-bottom:1px solid #2a2724}
+.sb-logo{font-family:'Archivo';font-weight:900;font-size:24px;letter-spacing:.06em;color:#fff;line-height:1}
+.sb-logo span{color:var(--flame)}
+.sb-tagline{color:#8a847e;font-size:10.5px;margin-top:6px;letter-spacing:.04em}
+.sb-nav{padding:10px 0;flex:1}
+.sb-section{padding:12px 16px 5px;font-size:9.5px;text-transform:uppercase;letter-spacing:.9px;color:#5c5852;font-weight:700}
+.nav-item{display:flex;align-items:center;gap:11px;padding:10px 20px;color:#a49e97;font-size:13px;cursor:pointer;border-left:3px solid transparent;transition:all .15s;user-select:none;font-weight:500}
+.nav-item:hover{color:#fff;background:rgba(255,255,255,.04)}
+.nav-item.active{color:#fff;background:rgba(240,78,35,.14);border-left-color:var(--flame)}
+.nav-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0}
+.sb-footer{padding:16px 20px;border-top:1px solid #2a2724;color:#5c5852;font-size:10px;line-height:1.7}
+
+/* ── Content ── */
+.content{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{background:var(--card);border-bottom:1px solid var(--line);height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;flex-shrink:0}
+.tb-title{font-size:16px;font-weight:800}
+.tb-right{display:flex;align-items:center;gap:10px}
+.tb-pill{display:flex;align-items:center;gap:6px;background:var(--paper);padding:6px 13px;border-radius:20px;font-size:11px;font-weight:600;color:var(--muted)}
+.dot-live{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green)}
+.pages{flex:1;overflow-y:auto;padding:24px 26px 48px}
+.page-section{display:none}
+.page-section.active{display:block}
+
+/* ── Section headers ── */
+.sec-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+.sec-title{font-size:19px;font-weight:800}
+.sec-sub{font-size:12.5px;color:var(--muted);margin-top:3px}
+.badge-flame{background:rgba(240,78,35,.1);color:var(--flame);border:1px solid rgba(240,78,35,.25);padding:4px 11px;border-radius:20px;font-size:11px;font-weight:700}
+
+/* ── KPI cards ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+.kpi{background:var(--card);border-radius:var(--radius);border:1px solid var(--line);box-shadow:var(--shadow);padding:18px 20px 15px;position:relative;overflow:hidden}
+.kpi-bar{position:absolute;left:0;top:18px;width:3px;height:30px;border-radius:0 3px 3px 0;background:var(--flame)}
+.kpi-lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:8px;font-weight:600}
+.kpi-val{font-size:25px;font-weight:800;line-height:1;margin-bottom:6px;font-variant-numeric:tabular-nums}
+.kpi-sub{font-size:11px;font-weight:600;display:flex;align-items:center;gap:3px}
+.up{color:var(--green)}.dn{color:var(--red)}.neu{color:var(--muted)}
+
+/* ── Grid layouts ── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.g21{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px}
+.g12{display:grid;grid-template-columns:1fr 2fr;gap:14px;margin-bottom:14px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px}
+.full{margin-bottom:14px}
+
+/* ── Card ── */
+.card{background:var(--card);border-radius:var(--radius);border:1px solid var(--line);box-shadow:var(--shadow);padding:20px}
+.card-title{font-size:13.5px;font-weight:700;margin-bottom:2px}
+.card-sub{font-size:11px;color:var(--muted);margin-bottom:15px;line-height:1.5}
+.ch{position:relative}
+.ch-160{height:160px}.ch-200{height:200px}.ch-240{height:240px}.ch-280{height:280px}.ch-320{height:320px}
+
+/* ── Tables ── */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap;font-weight:700}
+td{padding:10px 12px;font-size:12.5px;border-bottom:1px solid #f4f0ea;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:#fdfaf6}
+.fw7{font-weight:700}.tr{text-align:right}.tc{text-align:center}
+.c-flame{color:var(--flame)}.c-green{color:var(--green)}.c-red{color:var(--red)}.c-muted{color:var(--muted)}
+th.sortable{cursor:pointer;user-select:none}th.sortable:hover{color:var(--flame)}
+
+/* ── Badges ── */
+.b{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:10.5px;font-weight:700}
+.b-flame{background:rgba(240,78,35,.12);color:#c23a16}
+.b-green{background:#d7f5e3;color:#137a44}
+.b-blue{background:#dbeafe;color:#1e40af}
+.b-amber{background:#fef2d5;color:#946200}
+.b-purple{background:#ede9fe;color:#5b21b6}
+.b-gray{background:#f0ede8;color:#6b7280}
+.b-red{background:#fde4e4;color:#b42222}
+
+/* ── Progress ── */
+.prog-bg{background:#f0ede8;border-radius:4px;height:7px;width:100%}
+.prog-fill{border-radius:4px;height:7px;transition:width .4s;background:var(--flame)}
+.mini-bar-bg{background:#f0ede8;border-radius:3px;height:5px;width:80px;display:inline-block;vertical-align:middle}
+.mini-bar-fill{background:var(--flame);border-radius:3px;height:5px}
+
+/* ── Inventory cards ── */
+.inv-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
+.inv-card{background:var(--card);border-radius:12px;border:1px solid var(--line);padding:15px 16px;box-shadow:var(--shadow)}
+.inv-name{font-size:12px;font-weight:700;margin-bottom:9px;display:flex;justify-content:space-between;align-items:center}
+.inv-val{font-size:23px;font-weight:800;margin-bottom:2px}
+.inv-days{font-size:11px;color:var(--muted);margin-bottom:9px}
+.alert-ok{background:#d7f5e3;color:#137a44}
+.alert-warn{background:#fef2d5;color:#946200}
+.alert-crit{background:#fde4e4;color:#b42222}
+
+/* ── Channel chips ── */
+.chan-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:8px;font-size:11px;font-weight:600;background:var(--paper);border:1px solid var(--line)}
+
+/* ── Calendar ── */
+.promo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.promo-month{background:var(--card);border-radius:12px;border:1px solid var(--line);padding:14px;box-shadow:var(--shadow)}
+.promo-mon-title{font-size:12px;font-weight:800;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;color:var(--ink)}
+.promo-event{font-size:10.5px;padding:5px 8px;border-radius:6px;margin-bottom:4px;font-weight:600;line-height:1.3}
+.ev-sale{background:rgba(240,78,35,.1);color:#c23a16}
+.ev-live{background:#ede9fe;color:#5b21b6}
+.ev-gb{background:#d7f5e3;color:#137a44}
+.ev-ad{background:#dbeafe;color:#1e40af}
+.ev-etc{background:#f0ede8;color:#6b7280}
+
+/* ── Timeline (group buy) ── */
+.gb-row{display:grid;grid-template-columns:200px 1fr;gap:14px;align-items:center;padding:11px 0;border-bottom:1px solid #f4f0ea}
+.gb-row:last-child{border-bottom:none}
+.gb-track{position:relative;height:26px;background:var(--paper);border-radius:8px;overflow:hidden}
+.gb-fill{position:absolute;height:100%;border-radius:8px;display:flex;align-items:center;padding:0 9px;font-size:10.5px;font-weight:700;color:#fff;white-space:nowrap}
+
+/* ── Modal ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(20,15,10,.55);display:flex;align-items:center;justify-content:center;z-index:1000}
+.modal-overlay.hidden{display:none}
+.modal-box{background:#fff;border-radius:16px;padding:26px;width:500px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.modal-title{font-size:15px;font-weight:800;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+.form-row{margin-bottom:12px}
+.form-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.form-row label,.form-row2 label{display:block;font-size:10px;font-weight:700;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px}
+.form-input{border:1px solid var(--line);border-radius:9px;padding:9px 12px;font-size:13px;width:100%;outline:none;background:#fff;color:var(--text);font-family:inherit}
+.form-input:focus{border-color:var(--flame)}
+select.form-input{cursor:pointer}
+.btn-primary{background:var(--flame);color:#fff;border:none;padding:9px 20px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-primary:hover{opacity:.9}
+.btn-ghost{background:#fff;border:1px solid var(--line);color:var(--text);padding:9px 18px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn-ghost:hover{background:var(--paper)}
+.btn-sm{padding:6px 13px;font-size:11.5px;border-radius:8px}
+.icon-btn{background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);padding:3px 6px;border-radius:6px}
+.icon-btn:hover{background:var(--paper);color:var(--flame)}
+
+/* ── Filters ── */
+.filter-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.seg{display:flex;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{background:none;border:none;color:var(--muted);padding:8px 15px;font-size:12.5px;font-weight:600;cursor:pointer;transition:.15s;font-family:inherit}
+.seg button.on{background:var(--flame);color:#fff}
+.seg button:not(.on):hover{color:var(--text)}
+.search-box{padding:8px 13px;border:1px solid var(--line);border-radius:9px;font-size:12.5px;outline:none;min-width:200px;font-family:inherit;background:#fff}
+.search-box:focus{border-color:var(--flame)}
+
+/* ── Login ── */
+#login-overlay{position:fixed;inset:0;background:var(--char);display:flex;align-items:center;justify-content:center;z-index:9999;background-image:radial-gradient(900px 500px at 80% -10%,#2a2320 0,var(--char) 60%)}
+#login-overlay.hidden{display:none}
+.login-box{background:#211e1b;border:1px solid #35302b;border-radius:20px;padding:40px 36px;width:360px;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.login-logo{font-family:'Archivo';font-weight:900;font-size:34px;letter-spacing:.06em;color:#fff;margin-bottom:6px}
+.login-logo span{color:var(--flame)}
+.login-sub{color:#8a847e;font-size:12px;margin-bottom:28px;letter-spacing:.04em}
+.login-input{width:100%;padding:12px 15px;border:1px solid #35302b;border-radius:11px;background:#17140f;color:#fff;font-size:14px;margin-bottom:12px;outline:none;font-family:inherit}
+.login-input:focus{border-color:var(--flame)}
+.login-btn{width:100%;padding:12px;border:none;border-radius:11px;background:var(--flame);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+.login-btn:hover{opacity:.92}
+.login-hint{color:#5c5852;font-size:11px;margin-top:16px}
+
+.empty{text-align:center;color:var(--muted);font-size:13px;padding:40px}
+@media print{.sidebar,.topbar{display:none!important}.content{overflow:visible}.pages{overflow:visible}#login-overlay{display:none!important}}
+@media(max-width:1100px){.kpi-grid,.inv-grid{grid-template-columns:repeat(2,1fr)}.g2,.g21,.g12,.g3,.promo-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- ═══ LOGIN ═══ -->
+<div id="login-overlay">
+  <div class="login-box">
+    <div class="login-logo">BRA<span>TEN</span></div>
+    <div class="login-sub">국내 운영 대시보드</div>
+    <input type="password" class="login-input" id="login-pw" placeholder="접속 비밀번호" onkeydown="if(event.key==='Enter')doLogin()" />
+    <button class="login-btn" onclick="doLogin()">로그인</button>
+    <div class="login-hint">데모 비밀번호: <b>braten</b></div>
+  </div>
+</div>
+
+<!-- ═══ SIDEBAR ═══ -->
+<aside class="sidebar">
+  <div class="sb-brand">
+    <div class="sb-logo">BRA<span>TEN</span></div>
+    <div class="sb-tagline">THE OVERHEAD FLAME GRILL · 국내</div>
+  </div>
+  <nav class="sb-nav">
+    <div class="sb-section">운영 현황</div>
+    <div class="nav-item active" onclick="nav('overview',this)"><span class="nav-icon">◉</span> 개요</div>
+    <div class="nav-item" onclick="nav('sales',this)"><span class="nav-icon">📈</span> 매출 시트</div>
+    <div class="nav-item" onclick="nav('inventory',this)"><span class="nav-icon">📦</span> 재고 연동화</div>
+
+    <div class="sb-section">마케팅</div>
+    <div class="nav-item" onclick="nav('promotions',this)"><span class="nav-icon">🗓️</span> 프로모션 일정</div>
+    <div class="nav-item" onclick="nav('groupbuy',this)"><span class="nav-icon">🤝</span> 공구 일정</div>
+    <div class="nav-item" onclick="nav('ads',this)"><span class="nav-icon">📢</span> 디지털 광고</div>
+
+    <div class="sb-section">조직</div>
+    <div class="nav-item" onclick="nav('team',this)"><span class="nav-icon">👥</span> 직원 관리</div>
+  </nav>
+  <div class="sb-footer">
+    BRATEN Ops v1.0<br>
+    데이터는 브라우저에 저장됩니다
+  </div>
+</aside>
+
+<!-- ═══ CONTENT ═══ -->
+<div class="content">
+  <div class="topbar">
+    <div class="tb-title" id="topbarTitle">개요</div>
+    <div class="tb-right">
+      <span class="tb-pill"><span class="dot-live"></span> LIVE · <span id="todayLabel"></span></span>
+      <button class="btn-ghost btn-sm" onclick="window.print()">🖨 리포트 인쇄</button>
+    </div>
+  </div>
+
+  <div class="pages">
+
+  <!-- ═══════════ 개요 ═══════════ -->
+  <section class="page-section active" id="sec-overview">
+    <div class="sec-head">
+      <div>
+        <div class="sec-title">국내 운영 개요</div>
+        <div class="sec-sub">전 채널 매출 · 재고 · 마케팅 통합 현황 <span id="ovMonth"></span></div>
+      </div>
+      <span class="badge-flame">DOMESTIC · KRW</span>
+    </div>
+    <div class="kpi-grid" id="ovKpis"></div>
+    <div class="g21">
+      <div class="card">
+        <div class="card-title">월별 매출 추이 (전 채널)</div>
+        <div class="card-sub">자사몰 · 스마트스토어 · 쿠팡 · 오늘의집 합산 (₩)</div>
+        <div class="ch ch-280"><canvas id="ovTrend"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">채널별 매출 비중</div>
+        <div class="card-sub">이번 달 기준</div>
+        <div class="ch ch-280"><canvas id="ovChannel"></canvas></div>
+      </div>
+    </div>
+    <div class="g2">
+      <div class="card">
+        <div class="card-title">제품별 판매량</div>
+        <div class="card-sub">이번 달 판매 수량 (대)</div>
+        <div class="ch ch-240"><canvas id="ovProduct"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">이번 달 주요 일정</div>
+        <div class="card-sub">프로모션 · 공구 · 광고 캠페인</div>
+        <div id="ovAgenda" style="margin-top:4px"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 매출 시트 ═══════════ -->
+  <section class="page-section" id="sec-sales">
+    <div class="sec-head">
+      <div>
+        <div class="sec-title">매출 시트</div>
+        <div class="sec-sub">채널별 월 매출 · 목표 대비 실적 · 직접 편집 가능</div>
+      </div>
+      <button class="btn-primary btn-sm" onclick="openSalesModal()">＋ 매출 입력</button>
+    </div>
+    <div class="kpi-grid" id="salesKpis"></div>
+    <div class="g21">
+      <div class="card">
+        <div class="card-title">목표 vs 실적 (월별)</div>
+        <div class="card-sub">전 채널 합산 매출 목표 달성률</div>
+        <div class="ch ch-280"><canvas id="salesTargetChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">채널별 누적 매출</div>
+        <div class="card-sub">YTD 기준 (₩)</div>
+        <div class="ch ch-280"><canvas id="salesChannelChart"></canvas></div>
+      </div>
+    </div>
+    <div class="card full">
+      <div class="filter-row" style="margin-bottom:14px;justify-content:space-between">
+        <div class="card-title" style="margin:0">월별 매출 상세</div>
+        <div class="seg" id="salesChanFilter">
+          <button class="on" data-v="all">전체</button>
+          <button data-v="자사몰">자사몰</button>
+          <button data-v="스마트스토어">스마트스토어</button>
+          <button data-v="쿠팡">쿠팡</button>
+        </div>
+      </div>
+      <div class="tbl-wrap">
+        <table id="salesTable">
+          <thead><tr>
+            <th>월</th><th>채널</th><th class="tr">매출</th><th class="tr">주문수</th>
+            <th class="tr">객단가</th><th class="tr">목표</th><th class="tr">달성률</th><th class="tc">관리</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 재고 연동화 ═══════════ -->
+  <section class="page-section" id="sec-inventory">
+    <div class="sec-head">
+      <div>
+        <div class="sec-title">재고 연동화</div>
+        <div class="sec-sub">채널별 재고 통합 · 소진 예상일 · 재발주 알림</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-ghost btn-sm" onclick="openTransitModal()">＋ 입고 예정 등록</button>
+        <button class="btn-primary btn-sm" onclick="openStockModal()">재고 수정</button>
+      </div>
+    </div>
+    <div class="kpi-grid" id="invKpis"></div>
+    <div class="card full">
+      <div class="card-title">제품별 재고 현황</div>
+      <div class="card-sub">전 채널 통합 가용 재고 · 일 평균 판매량 기준 소진 예상일</div>
+      <div class="inv-grid" id="invCards"></div>
+    </div>
+    <div class="g21">
+      <div class="card">
+        <div class="card-title">채널별 재고 분포</div>
+        <div class="card-sub">자사몰 창고 · 쿠팡 로켓 · 스마트스토어 · 3PL</div>
+        <div class="ch ch-280"><canvas id="invChannelChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">입고 예정 (In-Transit)</div>
+        <div class="card-sub">생산 완료 · 통관 · 입고 대기 물량</div>
+        <div class="tbl-wrap" style="margin-top:4px">
+          <table id="transitTable">
+            <thead><tr><th>제품</th><th class="tr">수량</th><th>입고예정</th><th class="tc">상태</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 프로모션 일정 ═══════════ -->
+  <section class="page-section" id="sec-promotions">
+    <div class="sec-head">
+      <div>
+        <div class="sec-title">프로모션 일정</div>
+        <div class="sec-sub">채널 행사 · 라이브 · 쿠폰 · 광고 캠페인 캘린더</div>
+      </div>
+      <button class="btn-primary btn-sm" onclick="openPromoModal()">＋ 일정 추가</button>
+    </div>
+    <div class="filter-row">
+      <div class="seg" id="promoTypeFilter">
+        <button class="on" data-v="all">전체</button>
+        <button data-v="sale">할인행사</button>
+        <button data-v="live">라이브</button>
+        <button data-v="gb">공구</button>
+        <button data-v="ad">광고</button>
+        <button data-v="etc">기타</button>
+      </div>
+    </div>
+    <div class="promo-grid" id="promoCalendar"></div>
+    <div class="card full" style="margin-top:14px">
+      <div class="card-title">진행/예정 프로모션 목록</div>
+      <div class="card-sub">기간 · 채널 · 예상 매출</div>
+      <div class="tbl-wrap">
+        <table id="promoTable">
+          <thead><tr>
+            <th>프로모션</th><th class="tc">유형</th><th>채널</th><th>기간</th>
+            <th class="tr">목표매출</th><th class="tc">상태</th><th class="tc">관리</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 공구 일정 ═══════════ -->
+  <section class="page-section" id="sec-groupbuy">
+    <div class="sec-head">
+      <div>
+        <div class="sec-title">공구 일정</div>
+        <div class="sec-sub">인플루언서 · 카페 · 커뮤니티 공동구매 진행 현황</div>
+      </div>
+      <button class="btn-primary btn-sm" onclick="openGbModal()">＋ 공구 등록</button>
+    </div>
+    <div class="kpi-grid" id="gbKpis"></div>
+    <div class="card full">
+      <div class="card-title">공구 진행 타임라인</div>
+      <div class="card-sub">파트너별 진행 기간 · 색상 = 상태 (진행중/예정/완료)</div>
+      <div id="gbTimeline" style="margin-top:8px"></div>
+    </div>
+    <div class="card full">
+      <div class="card-title">공구 상세</div>
+      <div class="card-sub">파트너 · 채널 · 예상/실제 판매량 · 수수료</div>
+      <div class="tbl-wrap">
+        <table id="gbTable">
+          <thead><tr>
+            <th>파트너</th><th>채널</th><th>제품</th><th>기간</th>
+            <th class="tr">목표(대)</th><th class="tr">실적(대)</th><th class="tr">수수료</th>
+            <th class="tc">상태</th><th class="tc">관리</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 디지털 광고 ═══════════ -->
+  <section class="page-section" id="sec-ads">
+    <div class="sec-head">
+      <div>
+        <div class="sec-title">디지털 광고 대시보드</div>
+        <div class="sec-sub">메타(페이스북/인스타) · 네이버(검색/GFA) 광고 성과 통합</div>
+      </div>
+      <span class="badge-flame" id="adRoasBadge">평균 ROAS —</span>
+    </div>
+    <div class="filter-row">
+      <div class="seg" id="adPlatformFilter">
+        <button class="on" data-v="all">전체</button>
+        <button data-v="meta">Meta</button>
+        <button data-v="naver">네이버</button>
+      </div>
+      <input class="search-box" id="adSearch" type="search" placeholder="🔎 캠페인 검색" oninput="renderAds()" />
+    </div>
+    <div class="kpi-grid" id="adKpis"></div>
+    <div class="g2">
+      <div class="card">
+        <div class="card-title">플랫폼별 광고비 vs 매출(전환)</div>
+        <div class="card-sub">광고비(막대) 대비 전환매출(라인) · ROAS 비교</div>
+        <div class="ch ch-280"><canvas id="adPlatformChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">캠페인별 ROAS</div>
+        <div class="card-sub">상위 캠페인 광고효율 (매출/광고비)</div>
+        <div class="ch ch-280"><canvas id="adRoasChart"></canvas></div>
+      </div>
+    </div>
+    <div class="card full">
+      <div class="card-title">캠페인 상세</div>
+      <div class="card-sub">노출 · 클릭 · CTR · CPC · 전환 · ROAS 자동 계산 · 헤더 클릭 정렬</div>
+      <div class="tbl-wrap">
+        <table id="adTable"><thead></thead><tbody></tbody></table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 직원 관리 ═══════════ -->
+  <section class="page-section" id="sec-team">
+    <div class="sec-head">
+      <div>
+        <div class="sec-title">직원 관리</div>
+        <div class="sec-sub">국내 운영팀 구성원 · 담당 업무 · 연락처</div>
+      </div>
+      <button class="btn-primary btn-sm" onclick="openMemberModal()">＋ 직원 추가</button>
+    </div>
+    <div class="kpi-grid" id="teamKpis"></div>
+    <div class="card full">
+      <div class="card-title">팀 구성원</div>
+      <div class="card-sub">담당 채널/업무 · 상태</div>
+      <div class="tbl-wrap">
+        <table id="teamTable">
+          <thead><tr>
+            <th>이름</th><th>직무</th><th>담당</th><th>이메일</th><th>연락처</th>
+            <th class="tc">상태</th><th class="tc">관리</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  </div>
+</div>
+
+<!-- ═══ MODAL ═══ -->
+<div class="modal-overlay hidden" id="modal">
+  <div class="modal-box">
+    <div class="modal-title" id="modalTitle">입력</div>
+    <div id="modalBody"></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeModal()">취소</button>
+      <button class="btn-primary" id="modalSave">저장</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ══════════ 인증 ══════════ */
+function doLogin(){
+  const pw = document.getElementById('login-pw').value;
+  if(pw === 'braten' || localStorage.getItem('braten_auth')==='1'){
+    localStorage.setItem('braten_auth','1');
+    document.getElementById('login-overlay').classList.add('hidden');
+    boot();
+  } else { alert('비밀번호가 올바르지 않습니다.'); }
+}
+if(localStorage.getItem('braten_auth')==='1'){
+  document.getElementById('login-overlay').classList.add('hidden');
+}
+
+/* ══════════ 데이터 (localStorage 지속) ══════════ */
+const store = {
+  get(k, def){ try{ const v=localStorage.getItem('braten_'+k); return v?JSON.parse(v):structuredClone(def); }catch(e){ return structuredClone(def); } },
+  set(k, v){ try{ localStorage.setItem('braten_'+k, JSON.stringify(v)); }catch(e){} }
+};
+
+const PRODUCTS = ['BRATEN Core','BRATEN Pro Kit','BRATEN Portable','로티세리 모듈','전용 버너'];
+const CHANNELS = ['자사몰','스마트스토어','쿠팡'];
+const CH_COLORS = {'자사몰':'#f04e23','스마트스토어':'#2ec36e','쿠팡':'#3b82f6'};
+
+/* ─ 매출 (월/채널) ─ */
+const DEFAULT_SALES = (()=>{
+  const rows=[]; const months=['1월','2월','3월','4월','5월','6월'];
+  const base={'자사몰':[38,42,55,61,72,88],'스마트스토어':[52,58,64,70,79,91],'쿠팡':[44,49,53,60,68,77]};
+  const aov={'자사몰':289000,'스마트스토어':265000,'쿠팡':249000};
+  months.forEach((m,i)=>CHANNELS.forEach(c=>{
+    const orders=base[c][i]; const rev=orders*aov[c];
+    rows.push({id:c+'-'+i, month:m, channel:c, revenue:rev, orders, target:Math.round(rev/1e6)*1e6*1.1 });
+  }));
+  return rows;
+})();
+
+/* ─ 재고 ─ */
+const DEFAULT_STOCK = [
+  {id:'p1', product:'BRATEN Core',      stock:412, daily:11, byChannel:{'자사몰':120,'쿠팡':180,'스마트스토어':82,'3PL':30}},
+  {id:'p2', product:'BRATEN Pro Kit',   stock:96,  daily:6,  byChannel:{'자사몰':40,'쿠팡':30,'스마트스토어':16,'3PL':10}},
+  {id:'p3', product:'BRATEN Portable',  stock:238, daily:9,  byChannel:{'자사몰':70,'쿠팡':100,'스마트스토어':48,'3PL':20}},
+  {id:'p4', product:'로티세리 모듈',     stock:54,  daily:4,  byChannel:{'자사몰':24,'쿠팡':10,'스마트스토어':12,'3PL':8}},
+  {id:'p5', product:'전용 버너',         stock:640, daily:14, byChannel:{'자사몰':200,'쿠팡':250,'스마트스토어':140,'3PL':50}},
+];
+const DEFAULT_TRANSIT = [
+  {id:'t1', product:'BRATEN Core',    qty:500, eta:'2026-07-22', status:'생산완료'},
+  {id:'t2', product:'BRATEN Pro Kit', qty:200, eta:'2026-07-18', status:'통관중'},
+  {id:'t3', product:'로티세리 모듈',   qty:150, eta:'2026-07-30', status:'생산중'},
+];
+
+/* ─ 프로모션 ─ */
+const DEFAULT_PROMO = [
+  {id:'pr1', name:'쿠팡 로켓와우 여름특가', type:'sale', channel:'쿠팡', from:'2026-07-07', to:'2026-07-13', target:45e6, status:'진행중'},
+  {id:'pr2', name:'자사몰 회원 감사 쿠폰', type:'sale', channel:'자사몰', from:'2026-07-15', to:'2026-07-21', target:28e6, status:'예정'},
+  {id:'pr3', name:'네이버 쇼핑라이브 (그릴 시연)', type:'live', channel:'스마트스토어', from:'2026-07-19', to:'2026-07-19', target:35e6, status:'예정'},
+  {id:'pr4', name:'쿠팡 여름 캠핑 기획전', type:'sale', channel:'쿠팡', from:'2026-08-01', to:'2026-08-14', target:52e6, status:'예정'},
+  {id:'pr5', name:'Meta 신제품 런칭 광고', type:'ad', channel:'자사몰', from:'2026-07-01', to:'2026-07-31', target:60e6, status:'진행중'},
+  {id:'pr6', name:'요리 유튜버 공구', type:'gb', channel:'자사몰', from:'2026-08-05', to:'2026-08-11', target:40e6, status:'예정'},
+];
+
+/* ─ 공구 ─ */
+const DEFAULT_GB = [
+  {id:'g1', partner:'캠핑요리연구소', channel:'네이버카페', product:'BRATEN Portable', from:'2026-07-05', to:'2026-07-11', targetUnits:120, actualUnits:98, commission:0.12, status:'진행중'},
+  {id:'g2', partner:'집밥백선생 (인스타)', channel:'인스타그램', product:'BRATEN Core', from:'2026-07-14', to:'2026-07-20', targetUnits:200, actualUnits:0, commission:0.15, status:'예정'},
+  {id:'g3', partner:'맘카페 연합', channel:'네이버카페', product:'BRATEN Pro Kit', from:'2026-06-20', to:'2026-06-26', targetUnits:80, actualUnits:112, commission:0.10, status:'완료'},
+  {id:'g4', partner:'유튜버 쿠킹하루', channel:'유튜브', product:'BRATEN Core', from:'2026-08-05', to:'2026-08-11', targetUnits:150, actualUnits:0, commission:0.13, status:'예정'},
+];
+
+/* ─ 광고 ─ */
+const DEFAULT_ADS = [
+  {id:'a1', platform:'meta', name:'신제품 런칭 - 인지도', impr:1240000, clicks:18600, cost:8200000, revenue:31500000},
+  {id:'a2', platform:'meta', name:'리타겟팅 - 전환', impr:420000, clicks:12800, cost:5400000, revenue:37800000},
+  {id:'a3', platform:'meta', name:'인스타 릴스 - 시연영상', impr:980000, clicks:14200, cost:6100000, revenue:24400000},
+  {id:'a4', platform:'naver', name:'검색광고 - "무연 그릴"', impr:310000, clicks:9800, cost:4700000, revenue:29140000},
+  {id:'a5', platform:'naver', name:'검색광고 - "실내 바베큐"', impr:185000, clicks:6200, cost:3100000, revenue:18600000},
+  {id:'a6', platform:'naver', name:'GFA - 성과형 디스플레이', impr:720000, clicks:8400, cost:3900000, revenue:15600000},
+  {id:'a7', platform:'naver', name:'쇼핑검색 - 브랜드', impr:260000, clicks:7100, cost:2800000, revenue:22400000},
+];
+
+/* ─ 직원 ─ */
+const DEFAULT_TEAM = [
+  {id:'m1', name:'김브라텐', role:'국내총괄', duty:'전 채널 총괄', email:'ceo@braten.co.kr', phone:'010-1234-5678', status:'재직'},
+  {id:'m2', name:'이커머스', role:'이커머스 매니저', duty:'자사몰·쿠팡', email:'ecom@braten.co.kr', phone:'010-2345-6789', status:'재직'},
+  {id:'m3', name:'박마케팅', role:'퍼포먼스 마케터', duty:'메타·네이버 광고', email:'ad@braten.co.kr', phone:'010-3456-7890', status:'재직'},
+  {id:'m4', name:'최공구', role:'제휴 매니저', duty:'공구·인플루언서', email:'partner@braten.co.kr', phone:'010-4567-8901', status:'재직'},
+  {id:'m5', name:'정물류', role:'물류·CS', duty:'재고·배송·CS', email:'ops@braten.co.kr', phone:'010-5678-9012', status:'휴직'},
+];
+
+let SALES, STOCK, TRANSIT, PROMO, GB, ADS, TEAM;
+function loadAll(){
+  SALES  = store.get('sales', DEFAULT_SALES);
+  STOCK  = store.get('stock', DEFAULT_STOCK);
+  TRANSIT= store.get('transit', DEFAULT_TRANSIT);
+  PROMO  = store.get('promo', DEFAULT_PROMO);
+  GB     = store.get('gb', DEFAULT_GB);
+  ADS    = store.get('ads', DEFAULT_ADS);
+  TEAM   = store.get('team', DEFAULT_TEAM);
+}
+
+/* ══════════ 유틸 ══════════ */
+const won = n => '₩'+Math.round(n).toLocaleString('ko-KR');
+const wonShort = n => n>=1e8?(n/1e8).toFixed(2)+'억':n>=1e4?Math.round(n/1e4).toLocaleString()+'만':Math.round(n).toLocaleString();
+const pct = n => (n*100).toFixed(1)+'%';
+const uid = () => 'x'+Math.random().toString(36).slice(2,9);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const activeCharts = {};
+function mkChart(id, cfg){ if(activeCharts[id])activeCharts[id].destroy(); activeCharts[id]=new Chart(document.getElementById(id), cfg); }
+const CT={color:'#8a847e', font:{family:'Pretendard',size:11}};
+const GRID={color:'#f0ede8'};
+
+/* ══════════ 네비게이션 ══════════ */
+const PAGE_TITLES = {overview:'개요', sales:'매출 시트', inventory:'재고 연동화', promotions:'프로모션 일정', groupbuy:'공구 일정', ads:'디지털 광고', team:'직원 관리'};
+let currentSection = 'overview';
+function nav(id, el){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.page-section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sec-'+id).classList.add('active');
+  document.getElementById('topbarTitle').textContent = PAGE_TITLES[id];
+  currentSection = id;
+  setTimeout(()=>renderSection(id), 30);
+}
+function renderSection(id){
+  ({overview:renderOverview, sales:renderSales, inventory:renderInventory,
+    promotions:renderPromotions, groupbuy:renderGroupbuy, ads:renderAds, team:renderTeam}[id])();
+}
+
+/* ══════════ 개요 ══════════ */
+function monthTotals(){
+  // 최근 달(6월) 기준
+  const last='6월', prev='5월';
+  const sumMonth = m => SALES.filter(r=>r.month===m).reduce((a,r)=>a+r.revenue,0);
+  const rev=sumMonth(last), prevRev=sumMonth(prev);
+  const orders=SALES.filter(r=>r.month===last).reduce((a,r)=>a+r.orders,0);
+  return {rev, prevRev, orders, growth:prevRev?(rev-prevRev)/prevRev:0};
+}
+function renderOverview(){
+  const mt=monthTotals();
+  const adCost=ADS.reduce((a,d)=>a+d.cost,0), adRev=ADS.reduce((a,d)=>a+d.revenue,0);
+  const roas=adCost?adRev/adCost:0;
+  const lowStock=STOCK.filter(s=>s.stock/s.daily<30).length;
+  const kpis=[
+    ['이번 달 매출', wonShort(mt.rev), (mt.growth>=0?'▲ ':'▼ ')+pct(Math.abs(mt.growth))+' 전월 대비', mt.growth>=0?'up':'dn'],
+    ['이번 달 주문', mt.orders.toLocaleString()+'건', '객단가 '+won(mt.orders?mt.rev/mt.orders:0), 'neu'],
+    ['광고 ROAS', roas.toFixed(1)+'x', '광고비 '+wonShort(adCost), roas>=3?'up':'dn'],
+    ['재고 경고', lowStock+'개 SKU', lowStock?'30일 내 소진 예상':'재고 안정', lowStock?'dn':'up'],
+  ];
+  document.getElementById('ovKpis').innerHTML = kpiHtml(kpis);
+  document.getElementById('ovMonth').textContent='· 6월';
+
+  const months=['1월','2월','3월','4월','5월','6월'];
+  mkChart('ovTrend',{type:'line',data:{labels:months,datasets:[{
+    label:'매출', data:months.map(m=>SALES.filter(r=>r.month===m).reduce((a,r)=>a+r.revenue,0)),
+    borderColor:'#f04e23', backgroundColor:'rgba(240,78,35,.08)', fill:true, tension:.35, borderWidth:2.5, pointBackgroundColor:'#f04e23', pointRadius:4
+  }]},options:lineOpts()});
+
+  const lastCh=CHANNELS.map(c=>SALES.filter(r=>r.month==='6월'&&r.channel===c).reduce((a,r)=>a+r.revenue,0));
+  mkChart('ovChannel',{type:'doughnut',data:{labels:CHANNELS,datasets:[{data:lastCh,
+    backgroundColor:CHANNELS.map(c=>CH_COLORS[c]),borderColor:'#fff',borderWidth:2,hoverOffset:6}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{position:'bottom',labels:{...CT,boxWidth:11,padding:10}},tooltip:{callbacks:{label:c=>' '+c.label+': '+wonShort(c.parsed)}}}}});
+
+  // 제품별 판매량 추정 (재고 daily * 30)
+  mkChart('ovProduct',{type:'bar',data:{labels:STOCK.map(s=>s.product),datasets:[{
+    label:'판매량', data:STOCK.map(s=>s.daily*30), backgroundColor:'rgba(240,78,35,.8)', borderRadius:5}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.parsed.x.toLocaleString()+'대'}}},
+      scales:{x:{ticks:CT,grid:GRID},y:{ticks:CT,grid:{display:false}}}}});
+
+  // 이번 달 주요 일정
+  const agenda=[...PROMO,...GB.map(g=>({name:g.partner+' 공구',type:'gb',from:g.from,to:g.to,status:g.status,channel:g.channel}))]
+    .filter(e=>e.from.startsWith('2026-07')||e.to.startsWith('2026-07'))
+    .sort((a,b)=>a.from.localeCompare(b.from)).slice(0,7);
+  document.getElementById('ovAgenda').innerHTML = agenda.length? agenda.map(e=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #f4f0ea">
+      <span class="b ${typeBadge(e.type)}" style="min-width:52px;justify-content:center">${typeLabel(e.type)}</span>
+      <div style="flex:1"><div style="font-weight:600;font-size:12.5px">${esc(e.name)}</div>
+      <div style="font-size:11px;color:var(--muted)">${e.from.slice(5)} ~ ${e.to.slice(5)} · ${esc(e.channel||'')}</div></div>
+      <span class="b ${statusBadge(e.status)}">${esc(e.status)}</span>
+    </div>`).join('') : '<div class="empty">이번 달 일정이 없습니다</div>';
+}
+
+function kpiHtml(kpis){
+  return kpis.map(([l,v,s,c])=>`<div class="kpi"><div class="kpi-bar"></div>
+    <div class="kpi-lbl">${l}</div><div class="kpi-val">${v}</div>
+    <div class="kpi-sub ${c}">${s}</div></div>`).join('');
+}
+function lineOpts(){return{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
+  tooltip:{callbacks:{label:c=>' '+wonShort(c.parsed.y)}}},
+  scales:{x:{grid:{display:false},ticks:CT},y:{grid:GRID,ticks:{...CT,callback:v=>wonShort(v)}}}};}
+function typeBadge(t){return{sale:'b-flame',live:'b-purple',gb:'b-green',ad:'b-blue',etc:'b-gray'}[t]||'b-gray';}
+function typeLabel(t){return{sale:'할인',live:'라이브',gb:'공구',ad:'광고',etc:'기타'}[t]||t;}
+function statusBadge(s){return{'진행중':'b-green','예정':'b-amber','완료':'b-gray','재직':'b-green','휴직':'b-amber','퇴사':'b-gray'}[s]||'b-gray';}
+
+/* ══════════ 매출 시트 ══════════ */
+let salesChanFilter='all';
+function renderSales(){
+  const ytdRev=SALES.reduce((a,r)=>a+r.revenue,0);
+  const ytdTarget=SALES.reduce((a,r)=>a+r.target,0);
+  const ytdOrders=SALES.reduce((a,r)=>a+r.orders,0);
+  const kpis=[
+    ['YTD 매출', wonShort(ytdRev), '누적 6개월', 'neu'],
+    ['목표 달성률', pct(ytdTarget?ytdRev/ytdTarget:0), '목표 '+wonShort(ytdTarget), ytdRev>=ytdTarget?'up':'dn'],
+    ['총 주문', ytdOrders.toLocaleString()+'건', '평균 객단가 '+won(ytdOrders?ytdRev/ytdOrders:0), 'neu'],
+    ['최고 채널', topChannel(), '누적 매출 기준', 'up'],
+  ];
+  document.getElementById('salesKpis').innerHTML=kpiHtml(kpis);
+
+  const months=['1월','2월','3월','4월','5월','6월'];
+  mkChart('salesTargetChart',{data:{labels:months,datasets:[
+    {type:'bar',label:'실적',data:months.map(m=>SALES.filter(r=>r.month===m).reduce((a,r)=>a+r.revenue,0)),backgroundColor:'rgba(240,78,35,.85)',borderRadius:5},
+    {type:'line',label:'목표',data:months.map(m=>SALES.filter(r=>r.month===m).reduce((a,r)=>a+r.target,0)),borderColor:'#1a1917',borderDash:[5,4],borderWidth:2,pointRadius:3,tension:.2}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:CT},tooltip:{callbacks:{label:c=>c.dataset.label+': '+wonShort(c.parsed.y)}}},
+    scales:{x:{grid:{display:false},ticks:CT},y:{grid:GRID,ticks:{...CT,callback:v=>wonShort(v)}}}}});
+
+  mkChart('salesChannelChart',{type:'bar',data:{labels:CHANNELS,datasets:[{label:'누적매출',
+    data:CHANNELS.map(c=>SALES.filter(r=>r.channel===c).reduce((a,r)=>a+r.revenue,0)),
+    backgroundColor:CHANNELS.map(c=>CH_COLORS[c]),borderRadius:5}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>wonShort(c.parsed.x)}}},
+      scales:{x:{grid:GRID,ticks:{...CT,callback:v=>wonShort(v)}},y:{grid:{display:false},ticks:CT}}}});
+
+  renderSalesTable();
+}
+function topChannel(){
+  const m={}; SALES.forEach(r=>m[r.channel]=(m[r.channel]||0)+r.revenue);
+  return Object.entries(m).sort((a,b)=>b[1]-a[1])[0][0];
+}
+function renderSalesTable(){
+  const rows=SALES.filter(r=>salesChanFilter==='all'||r.channel===salesChanFilter);
+  document.querySelector('#salesTable tbody').innerHTML = rows.map(r=>{
+    const rate=r.target?r.revenue/r.target:0;
+    return `<tr>
+      <td class="fw7">${r.month}</td>
+      <td><span class="chan-chip"><span style="width:8px;height:8px;border-radius:50%;background:${CH_COLORS[r.channel]}"></span>${r.channel}</span></td>
+      <td class="tr fw7">${won(r.revenue)}</td>
+      <td class="tr">${r.orders}</td>
+      <td class="tr c-muted">${won(r.orders?r.revenue/r.orders:0)}</td>
+      <td class="tr c-muted">${won(r.target)}</td>
+      <td class="tr"><span class="${rate>=1?'c-green':'c-red'} fw7">${pct(rate)}</span></td>
+      <td class="tc"><button class="icon-btn" onclick="openSalesModal('${r.id}')">✏️</button><button class="icon-btn" onclick="delRow('sales','${r.id}')">🗑</button></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="8" class="empty">데이터가 없습니다</td></tr>';
+}
+
+/* ══════════ 재고 ══════════ */
+function renderInventory(){
+  const total=STOCK.reduce((a,s)=>a+s.stock,0);
+  const inbound=TRANSIT.reduce((a,t)=>a+t.qty,0);
+  const crit=STOCK.filter(s=>s.stock/s.daily<20).length;
+  const value=STOCK.reduce((a,s)=>a+s.stock*250000,0);
+  document.getElementById('invKpis').innerHTML=kpiHtml([
+    ['총 재고', total.toLocaleString()+'대', CHANNELS.length+'개 채널 통합', 'neu'],
+    ['입고 예정', inbound.toLocaleString()+'대', TRANSIT.length+'건 진행중', 'up'],
+    ['긴급 발주', crit+'개 SKU', crit?'20일 내 소진 예상':'재고 안정', crit?'dn':'up'],
+    ['재고 자산', wonShort(value), '원가 기준 추정', 'neu'],
+  ]);
+
+  document.getElementById('invCards').innerHTML = STOCK.map(s=>{
+    const days=Math.round(s.stock/s.daily);
+    const cls = days<20?'alert-crit':days<35?'alert-warn':'alert-ok';
+    const label = days<20?'긴급 발주':days<35?'발주 검토':'안정';
+    return `<div class="inv-card">
+      <div class="inv-name">${esc(s.product)} <span class="b ${cls}">${label}</span></div>
+      <div class="inv-val">${s.stock.toLocaleString()}<span style="font-size:12px;color:var(--muted)"> 대</span></div>
+      <div class="inv-days">일 판매 ${s.daily}대 · 소진 예상 <b style="color:${days<20?'var(--red)':days<35?'var(--amber)':'var(--green)'}">${days}일</b></div>
+      <div class="prog-bg"><div class="prog-fill" style="width:${Math.min(100,days/60*100)}%;background:${days<20?'var(--red)':days<35?'var(--amber)':'var(--green)'}"></div></div>
+    </div>`;
+  }).join('');
+
+  const chans=['자사몰','쿠팡','스마트스토어','3PL'];
+  mkChart('invChannelChart',{type:'bar',data:{labels:STOCK.map(s=>s.product),datasets:chans.map((ch,i)=>({
+    label:ch, data:STOCK.map(s=>s.byChannel[ch]||0),
+    backgroundColor:['#f04e23','#3b82f6','#2ec36e','#8b5cf6'][i], borderRadius:4, stack:'s'
+  }))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{...CT,boxWidth:11}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.parsed.y+'대'}}},
+    scales:{x:{stacked:true,grid:{display:false},ticks:{...CT,font:{size:10}}},y:{stacked:true,grid:GRID,ticks:CT}}}});
+
+  document.querySelector('#transitTable tbody').innerHTML = TRANSIT.map(t=>`
+    <tr><td class="fw7">${esc(t.product)}</td><td class="tr">${t.qty.toLocaleString()}대</td>
+    <td>${t.eta}</td><td class="tc"><span class="b ${t.status==='통관중'?'b-blue':t.status==='생산완료'?'b-green':'b-amber'}">${esc(t.status)}</span>
+    <button class="icon-btn" onclick="delRow('transit','${t.id}')">🗑</button></td></tr>`).join('')
+    || '<tr><td colspan="4" class="empty">입고 예정 없음</td></tr>';
+}
+
+/* ══════════ 프로모션 ══════════ */
+let promoTypeFilter='all';
+function renderPromotions(){
+  const list=PROMO.filter(p=>promoTypeFilter==='all'||p.type===promoTypeFilter);
+  // 캘린더: 7,8,9월
+  const months=[['2026-07','7월'],['2026-08','8월'],['2026-09','9월']];
+  document.getElementById('promoCalendar').innerHTML = months.map(([ym,label])=>{
+    const evs=list.filter(p=>p.from.startsWith(ym)||p.to.startsWith(ym));
+    return `<div class="promo-month">
+      <div class="promo-mon-title">${label} <span class="c-muted" style="font-weight:600;font-size:10px">${evs.length}건</span></div>
+      ${evs.length?evs.map(e=>`<div class="promo-event ev-${e.type}">${e.from.slice(8)}~${e.to.slice(8)}일 · ${esc(e.name)}</div>`).join(''):'<div style="color:var(--muted);font-size:11px;padding:8px 0">일정 없음</div>'}
+    </div>`;
+  }).join('');
+  document.querySelector('#promoTable tbody').innerHTML = list.map(p=>`
+    <tr><td class="fw7">${esc(p.name)}</td>
+    <td class="tc"><span class="b ${typeBadge(p.type)}">${typeLabel(p.type)}</span></td>
+    <td>${esc(p.channel)}</td><td class="c-muted">${p.from.slice(5)} ~ ${p.to.slice(5)}</td>
+    <td class="tr fw7">${wonShort(p.target)}</td>
+    <td class="tc"><span class="b ${statusBadge(p.status)}">${esc(p.status)}</span></td>
+    <td class="tc"><button class="icon-btn" onclick="openPromoModal('${p.id}')">✏️</button><button class="icon-btn" onclick="delRow('promo','${p.id}')">🗑</button></td></tr>`).join('')
+    || '<tr><td colspan="7" class="empty">프로모션이 없습니다</td></tr>';
+}
+
+/* ══════════ 공구 ══════════ */
+function renderGroupbuy(){
+  const active=GB.filter(g=>g.status==='진행중').length;
+  const totalActual=GB.reduce((a,g)=>a+g.actualUnits,0);
+  const totalTarget=GB.reduce((a,g)=>a+g.targetUnits,0);
+  const revenue=GB.reduce((a,g)=>a+g.actualUnits*250000,0);
+  document.getElementById('gbKpis').innerHTML=kpiHtml([
+    ['진행중 공구', active+'건', '총 '+GB.length+'건 등록', 'neu'],
+    ['공구 판매량', totalActual.toLocaleString()+'대', '목표 '+totalTarget.toLocaleString()+'대', totalActual>=totalTarget?'up':'neu'],
+    ['목표 달성률', pct(totalTarget?totalActual/totalTarget:0), '진행+완료 기준', 'neu'],
+    ['공구 매출', wonShort(revenue), '실적 기준 추정', 'up'],
+  ]);
+  // 타임라인 (6~8월)
+  const t0=new Date('2026-06-15').getTime(), t1=new Date('2026-08-20').getTime(), span=t1-t0;
+  const stColor={'진행중':'#2ec36e','예정':'#ffb020','완료':'#8a847e'};
+  document.getElementById('gbTimeline').innerHTML = GB.map(g=>{
+    const s=(new Date(g.from).getTime()-t0)/span*100, w=(new Date(g.to).getTime()-new Date(g.from).getTime())/span*100;
+    return `<div class="gb-row">
+      <div><div style="font-weight:700;font-size:12.5px">${esc(g.partner)}</div><div style="font-size:11px;color:var(--muted)">${esc(g.channel)} · ${esc(g.product)}</div></div>
+      <div class="gb-track"><div class="gb-fill" style="left:${Math.max(0,s)}%;width:${Math.max(6,w)}%;background:${stColor[g.status]}">${g.from.slice(5)}~${g.to.slice(5)}</div></div>
+    </div>`;
+  }).join('');
+  document.querySelector('#gbTable tbody').innerHTML = GB.map(g=>`
+    <tr><td class="fw7">${esc(g.partner)}</td><td>${esc(g.channel)}</td><td class="c-muted">${esc(g.product)}</td>
+    <td class="c-muted">${g.from.slice(5)}~${g.to.slice(5)}</td>
+    <td class="tr">${g.targetUnits}</td>
+    <td class="tr fw7">${g.actualUnits||'—'}</td>
+    <td class="tr c-muted">${pct(g.commission)}</td>
+    <td class="tc"><span class="b ${statusBadge(g.status)}">${esc(g.status)}</span></td>
+    <td class="tc"><button class="icon-btn" onclick="openGbModal('${g.id}')">✏️</button><button class="icon-btn" onclick="delRow('gb','${g.id}')">🗑</button></td></tr>`).join('')
+    || '<tr><td colspan="9" class="empty">공구가 없습니다</td></tr>';
+}
+
+/* ══════════ 광고 ══════════ */
+let adPlatformFilter='all', adSort='cost', adDir=-1;
+function adDerive(d){ return {...d,
+  ctr:d.impr?d.clicks/d.impr:0, cpc:d.clicks?d.cost/d.clicks:0,
+  roas:d.cost?d.revenue/d.cost:0, cpm:d.impr?d.cost/d.impr*1000:0 }; }
+function renderAds(){
+  const q=(document.getElementById('adSearch')?.value||'').toLowerCase();
+  let rows=ADS.map(adDerive).filter(d=>(adPlatformFilter==='all'||d.platform===adPlatformFilter)
+    && (!q||d.name.toLowerCase().includes(q)));
+  const cost=rows.reduce((a,d)=>a+d.cost,0), rev=rows.reduce((a,d)=>a+d.revenue,0);
+  const clicks=rows.reduce((a,d)=>a+d.clicks,0), impr=rows.reduce((a,d)=>a+d.impr,0);
+  const roas=cost?rev/cost:0;
+  document.getElementById('adRoasBadge').textContent='평균 ROAS '+roas.toFixed(1)+'x';
+  document.getElementById('adKpis').innerHTML=kpiHtml([
+    ['총 광고비', wonShort(cost), rows.length+'개 캠페인', 'neu'],
+    ['전환 매출', wonShort(rev), 'ROAS '+roas.toFixed(1)+'x', roas>=3?'up':'dn'],
+    ['총 클릭', clicks.toLocaleString(), 'CTR '+pct(impr?clicks/impr:0), 'neu'],
+    ['평균 CPC', won(clicks?cost/clicks:0), '노출 '+wonShort(impr), 'neu'],
+  ]);
+
+  // 플랫폼별
+  const plats=[['meta','Meta'],['naver','네이버']];
+  const pcost=plats.map(([p])=>ADS.filter(d=>d.platform===p).reduce((a,d)=>a+d.cost,0));
+  const prev=plats.map(([p])=>ADS.filter(d=>d.platform===p).reduce((a,d)=>a+d.revenue,0));
+  mkChart('adPlatformChart',{data:{labels:plats.map(p=>p[1]),datasets:[
+    {type:'bar',label:'광고비',data:pcost,backgroundColor:'rgba(240,78,35,.85)',borderRadius:5,yAxisID:'y'},
+    {type:'bar',label:'전환매출',data:prev,backgroundColor:'rgba(59,130,246,.8)',borderRadius:5,yAxisID:'y'}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:CT},tooltip:{callbacks:{label:c=>c.dataset.label+': '+wonShort(c.parsed.y)}}},
+    scales:{x:{grid:{display:false},ticks:CT},y:{grid:GRID,ticks:{...CT,callback:v=>wonShort(v)}}}}});
+
+  const top=[...rows].sort((a,b)=>b.roas-a.roas).slice(0,7);
+  mkChart('adRoasChart',{type:'bar',data:{labels:top.map(d=>d.name),datasets:[{label:'ROAS',data:top.map(d=>+d.roas.toFixed(1)),
+    backgroundColor:top.map(d=>d.roas>=4?'#2ec36e':d.roas>=2.5?'#f04e23':'#e5484d'),borderRadius:5}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'ROAS '+c.parsed.x+'x'}}},
+      scales:{x:{grid:GRID,ticks:{...CT,callback:v=>v+'x'}},y:{grid:{display:false},ticks:{...CT,font:{size:10}}}}}});
+
+  const cols=[['name','캠페인',d=>`<span class="fw7">${esc(d.name)}</span>`],
+    ['platform','플랫폼',d=>`<span class="b ${d.platform==='meta'?'b-blue':'b-green'}">${d.platform==='meta'?'Meta':'네이버'}</span>`],
+    ['impr','노출',d=>wonShort(d.impr)],['clicks','클릭',d=>d.clicks.toLocaleString()],
+    ['ctr','CTR',d=>pct(d.ctr)],['cpc','CPC',d=>won(d.cpc)],['cost','광고비',d=>wonShort(d.cost)],
+    ['revenue','전환매출',d=>wonShort(d.revenue)],['roas','ROAS',d=>`<span class="fw7 ${d.roas>=3?'c-green':'c-red'}">${d.roas.toFixed(1)}x</span>`]];
+  document.querySelector('#adTable thead').innerHTML='<tr>'+cols.map(c=>`<th class="sortable ${['name','platform'].includes(c[0])?'':'tr'}" onclick="sortAds('${c[0]}')">${c[1]}${c[0]===adSort?(adDir<0?' ▾':' ▴'):''}</th>`).join('')+'</tr>';
+  rows.sort((a,b)=>{const x=a[adSort],y=b[adSort];return (typeof x==='number'?x-y:(''+x).localeCompare(y))*adDir;});
+  document.querySelector('#adTable tbody').innerHTML=rows.map(d=>'<tr>'+cols.map(c=>`<td class="${['name','platform'].includes(c[0])?'':'tr'}">${c[2](d)}</td>`).join('')+'</tr>').join('')
+    || '<tr><td colspan="9" class="empty">캠페인이 없습니다</td></tr>';
+}
+function sortAds(k){ if(k===adSort)adDir*=-1; else{adSort=k;adDir=-1;} renderAds(); }
+
+/* ══════════ 직원 ══════════ */
+function renderTeam(){
+  const active=TEAM.filter(m=>m.status==='재직').length;
+  document.getElementById('teamKpis').innerHTML=kpiHtml([
+    ['전체 인원', TEAM.length+'명', '국내 운영팀', 'neu'],
+    ['재직', active+'명', '', 'up'],
+    ['휴직/기타', (TEAM.length-active)+'명', '', 'neu'],
+    ['담당 채널', CHANNELS.length+'개', '전 채널 커버', 'up'],
+  ]);
+  document.querySelector('#teamTable tbody').innerHTML=TEAM.map(m=>`
+    <tr><td class="fw7">${esc(m.name)}</td><td>${esc(m.role)}</td><td class="c-muted">${esc(m.duty)}</td>
+    <td class="c-muted">${esc(m.email)}</td><td class="c-muted">${esc(m.phone)}</td>
+    <td class="tc"><span class="b ${statusBadge(m.status)}">${esc(m.status)}</span></td>
+    <td class="tc"><button class="icon-btn" onclick="openMemberModal('${m.id}')">✏️</button><button class="icon-btn" onclick="delRow('team','${m.id}')">🗑</button></td></tr>`).join('')
+    || '<tr><td colspan="7" class="empty">직원이 없습니다</td></tr>';
+}
+
+/* ══════════ 모달 & CRUD ══════════ */
+const modal=document.getElementById('modal');
+function closeModal(){ modal.classList.add('hidden'); }
+modal.addEventListener('click',e=>{ if(e.target===modal)closeModal(); });
+function field(label,id,val='',type='text',opts){
+  if(type==='select') return `<div class="form-row"><label>${label}</label><select class="form-input" id="${id}">${opts.map(o=>`<option ${o===val?'selected':''}>${o}</option>`).join('')}</select></div>`;
+  return `<div class="form-row"><label>${label}</label><input class="form-input" id="${id}" type="${type}" value="${esc(val)}"></div>`;
+}
+function openModal(title, bodyHtml, onSave){
+  document.getElementById('modalTitle').textContent=title;
+  document.getElementById('modalBody').innerHTML=bodyHtml;
+  document.getElementById('modalSave').onclick=onSave;
+  modal.classList.remove('hidden');
+}
+const val=id=>document.getElementById(id).value.trim();
+const numv=id=>+document.getElementById(id).value||0;
+
+function delRow(kind, id){
+  if(!confirm('삭제하시겠습니까?'))return;
+  const map={sales:()=>SALES=SALES.filter(r=>r.id!==id), transit:()=>TRANSIT=TRANSIT.filter(r=>r.id!==id),
+    promo:()=>PROMO=PROMO.filter(r=>r.id!==id), gb:()=>GB=GB.filter(r=>r.id!==id), team:()=>TEAM=TEAM.filter(r=>r.id!==id)};
+  map[kind]();
+  const skey={sales:'sales',transit:'transit',promo:'promo',gb:'gb',team:'team'}[kind];
+  store.set(skey, {sales:SALES,transit:TRANSIT,promo:PROMO,gb:GB,team:TEAM}[kind]);
+  renderSection(currentSection);
+}
+
+/* 매출 */
+function openSalesModal(id){
+  const r=id?SALES.find(x=>x.id===id):{};
+  openModal(id?'매출 수정':'매출 입력',
+    field('월','f_month',r.month||'6월','select',['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'])
+    +field('채널','f_ch',r.channel||'자사몰','select',CHANNELS)
+    +'<div class="form-row2">'+field('매출(원)','f_rev',r.revenue||'','number')+field('주문수','f_ord',r.orders||'','number')+'</div>'
+    +field('목표(원)','f_tgt',r.target||'','number'),
+    ()=>{
+      const obj={id:id||uid(),month:val('f_month'),channel:val('f_ch'),revenue:numv('f_rev'),orders:numv('f_ord'),target:numv('f_tgt')};
+      if(id)SALES=SALES.map(x=>x.id===id?obj:x); else SALES.push(obj);
+      store.set('sales',SALES); closeModal(); renderSales();
+    });
+}
+/* 재고 수정 */
+function openStockModal(){
+  openModal('재고 수정',
+    STOCK.map(s=>`<div class="form-row2"><label style="grid-column:span 2">${esc(s.product)}</label>
+      <input class="form-input" id="st_${s.id}" type="number" value="${s.stock}" placeholder="재고">
+      <input class="form-input" id="dl_${s.id}" type="number" value="${s.daily}" placeholder="일판매"></div>`).join(''),
+    ()=>{ STOCK.forEach(s=>{s.stock=numv('st_'+s.id);s.daily=numv('dl_'+s.id)||1;}); store.set('stock',STOCK); closeModal(); renderInventory(); });
+}
+function openTransitModal(){
+  openModal('입고 예정 등록',
+    field('제품','f_tp','BRATEN Core','select',PRODUCTS)
+    +'<div class="form-row2">'+field('수량','f_tq','','number')+field('입고예정일','f_te','2026-07-25','date')+'</div>'
+    +field('상태','f_ts','생산중','select',['생산중','생산완료','통관중','입고대기']),
+    ()=>{ TRANSIT.push({id:uid(),product:val('f_tp'),qty:numv('f_tq'),eta:val('f_te'),status:val('f_ts')}); store.set('transit',TRANSIT); closeModal(); renderInventory(); });
+}
+/* 프로모션 */
+function openPromoModal(id){
+  const r=id?PROMO.find(x=>x.id===id):{};
+  openModal(id?'프로모션 수정':'프로모션 추가',
+    field('프로모션명','f_pn',r.name||'')
+    +'<div class="form-row2">'+field('유형','f_pt',{sale:'할인행사',live:'라이브',gb:'공구',ad:'광고',etc:'기타'}[r.type]||'할인행사','select',['할인행사','라이브','공구','광고','기타'])+field('채널','f_pc',r.channel||'자사몰','select',CHANNELS)+'</div>'
+    +'<div class="form-row2">'+field('시작','f_pf',r.from||'2026-07-01','date')+field('종료','f_pto',r.to||'2026-07-07','date')+'</div>'
+    +'<div class="form-row2">'+field('목표매출(원)','f_ptg',r.target||'','number')+field('상태','f_ps',r.status||'예정','select',['예정','진행중','완료'])+'</div>',
+    ()=>{
+      const tmap={'할인행사':'sale','라이브':'live','공구':'gb','광고':'ad','기타':'etc'};
+      const obj={id:id||uid(),name:val('f_pn'),type:tmap[val('f_pt')],channel:val('f_pc'),from:val('f_pf'),to:val('f_pto'),target:numv('f_ptg'),status:val('f_ps')};
+      if(id)PROMO=PROMO.map(x=>x.id===id?obj:x); else PROMO.push(obj);
+      store.set('promo',PROMO); closeModal(); renderPromotions();
+    });
+}
+/* 공구 */
+function openGbModal(id){
+  const r=id?GB.find(x=>x.id===id):{};
+  openModal(id?'공구 수정':'공구 등록',
+    '<div class="form-row2">'+field('파트너','f_gp',r.partner||'')+field('채널','f_gc',r.channel||'네이버카페','select',['네이버카페','인스타그램','유튜브','블로그','카카오'])+'</div>'
+    +field('제품','f_gpr',r.product||'BRATEN Core','select',PRODUCTS)
+    +'<div class="form-row2">'+field('시작','f_gf',r.from||'2026-07-01','date')+field('종료','f_gt',r.to||'2026-07-07','date')+'</div>'
+    +'<div class="form-row2">'+field('목표(대)','f_gtg',r.targetUnits||'','number')+field('실적(대)','f_ga',r.actualUnits||'','number')+'</div>'
+    +'<div class="form-row2">'+field('수수료%','f_gcm',r.commission?r.commission*100:'','number')+field('상태','f_gs',r.status||'예정','select',['예정','진행중','완료'])+'</div>',
+    ()=>{
+      const obj={id:id||uid(),partner:val('f_gp'),channel:val('f_gc'),product:val('f_gpr'),from:val('f_gf'),to:val('f_gt'),targetUnits:numv('f_gtg'),actualUnits:numv('f_ga'),commission:numv('f_gcm')/100,status:val('f_gs')};
+      if(id)GB=GB.map(x=>x.id===id?obj:x); else GB.push(obj);
+      store.set('gb',GB); closeModal(); renderGroupbuy();
+    });
+}
+/* 직원 */
+function openMemberModal(id){
+  const r=id?TEAM.find(x=>x.id===id):{};
+  openModal(id?'직원 수정':'직원 추가',
+    '<div class="form-row2">'+field('이름','f_mn',r.name||'')+field('직무','f_mr',r.role||'')+'</div>'
+    +field('담당','f_md',r.duty||'')
+    +'<div class="form-row2">'+field('이메일','f_me',r.email||'')+field('연락처','f_mp',r.phone||'')+'</div>'
+    +field('상태','f_ms',r.status||'재직','select',['재직','휴직','퇴사']),
+    ()=>{
+      const obj={id:id||uid(),name:val('f_mn'),role:val('f_mr'),duty:val('f_md'),email:val('f_me'),phone:val('f_mp'),status:val('f_ms')};
+      if(id)TEAM=TEAM.map(x=>x.id===id?obj:x); else TEAM.push(obj);
+      store.set('team',TEAM); closeModal(); renderTeam();
+    });
+}
+
+/* 필터 바인딩 */
+function bindSeg(containerId, cb){
+  document.getElementById(containerId).querySelectorAll('button').forEach(b=>b.onclick=()=>{
+    b.parentElement.querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on'); cb(b.dataset.v);
+  });
+}
+
+/* ══════════ 부트 ══════════ */
+function boot(){
+  loadAll();
+  document.getElementById('todayLabel').textContent = new Date().toLocaleDateString('ko-KR',{month:'long',day:'numeric'});
+  bindSeg('salesChanFilter', v=>{salesChanFilter=v; renderSalesTable();});
+  bindSeg('promoTypeFilter', v=>{promoTypeFilter=v; renderPromotions();});
+  bindSeg('adPlatformFilter', v=>{adPlatformFilter=v; renderAds();});
+  renderOverview();
+}
+if(localStorage.getItem('braten_auth')==='1'){ boot(); }
+</script>
+</body>
+</html>
