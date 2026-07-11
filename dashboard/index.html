@@ -113,6 +113,16 @@ th.sortable{cursor:pointer;user-select:none}th.sortable:hover{color:var(--flame)
 .mini-bar-bg{background:#f0ede8;border-radius:3px;height:5px;width:80px;display:inline-block;vertical-align:middle}
 .mini-bar-fill{background:var(--flame);border-radius:3px;height:5px}
 
+/* ── Insight / Reference rows (경쟁자) ── */
+.ins-row{display:flex;gap:10px;padding:11px 0;border-bottom:1px solid #f4f0ea;font-size:12.5px;line-height:1.5}
+.ins-row:last-child{border-bottom:none}
+.ins-dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0}
+.ref-row{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid #f4f0ea}
+.ref-row:last-child{border-bottom:none}
+.ref-ic{flex-shrink:0}
+.ref-link{color:var(--flame);font-weight:600;font-size:12.5px;text-decoration:none}
+.ref-link:hover{text-decoration:underline}
+
 /* ── Inventory cards ── */
 .inv-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
 .inv-card{background:var(--card);border-radius:12px;border:1px solid var(--line);padding:15px 16px;box-shadow:var(--shadow)}
@@ -222,6 +232,9 @@ select.form-input{cursor:pointer}
 
     <div class="sb-section">조직</div>
     <div class="nav-item" onclick="nav('team',this)"><span class="nav-icon">👥</span> 직원 관리</div>
+
+    <div class="sb-section">시장</div>
+    <div class="nav-item" onclick="nav('competitors',this)"><span class="nav-icon">🎯</span> 경쟁자</div>
   </nav>
   <div class="sb-footer">
     BRATEN Ops v1.0<br>
@@ -254,7 +267,7 @@ select.form-input{cursor:pointer}
     <div class="g21">
       <div class="card">
         <div class="card-title">월별 매출 추이 (전 채널)</div>
-        <div class="card-sub">자사몰 · 스마트스토어 · 쿠팡 · 오늘의집 합산 (₩)</div>
+        <div class="card-sub">자사몰 · 스마트스토어 · 쿠팡 합산 (₩)</div>
         <div class="ch ch-280"><canvas id="ovTrend"></canvas></div>
       </div>
       <div class="card">
@@ -488,6 +501,49 @@ select.form-input{cursor:pointer}
     </div>
   </section>
 
+  <!-- ═══════════ 경쟁자 ═══════════ -->
+  <section class="page-section" id="sec-competitors">
+    <div class="sec-head">
+      <div>
+        <div class="sec-title">경쟁자 분석</div>
+        <div class="sec-sub">오버헤드 화염·살라만더 그릴 시장 · 가격/화력 포지셔닝 · 레퍼런스</div>
+      </div>
+      <button class="btn-primary btn-sm" onclick="openCompModal()">＋ 경쟁사 추가</button>
+    </div>
+    <div class="kpi-grid" id="compKpis"></div>
+    <div class="g21">
+      <div class="card">
+        <div class="card-title">가격 · 화력 포지셔닝 맵</div>
+        <div class="card-sub">X축 소비자가(₩) · Y축 최고 화력(°C) · 원 크기 = 가정용 적합도 · <span class="c-flame fw7">주황 = BRATEN</span></div>
+        <div class="ch ch-320"><canvas id="compMap"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">포지셔닝 요약</div>
+        <div class="card-sub">시장 내 BRATEN의 기회</div>
+        <div id="compInsight" style="margin-top:4px"></div>
+      </div>
+    </div>
+    <div class="card full">
+      <div class="card-title">경쟁사 비교표</div>
+      <div class="card-sub">글로벌 오버헤드 화염 브로일러 + 국내 유통 제품 · 직접 편집 가능</div>
+      <div class="tbl-wrap">
+        <table id="compTable">
+          <thead><tr>
+            <th>브랜드</th><th>원산지</th><th>연료</th>
+            <th class="tr">최고화력</th><th class="tr">소비자가</th>
+            <th class="tc">포지션</th><th>국내 유통</th><th>강점 / 약점</th><th class="tc">관리</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card full">
+      <div class="card-title">📚 레퍼런스 · 출처</div>
+      <div class="card-sub">경쟁사 데이터 수집 출처 (2026년 7월 기준)</div>
+      <div id="compRefs"></div>
+    </div>
+  </section>
+
   </div>
 </div>
 
@@ -593,7 +649,27 @@ const DEFAULT_TEAM = [
   {id:'m5', name:'정물류', role:'물류·CS', duty:'재고·배송·CS', email:'ops@braten.co.kr', phone:'010-5678-9012', status:'휴직'},
 ];
 
-let SALES, STOCK, TRANSIT, PROMO, GB, ADS, TEAM;
+/* ─ 경쟁자 (오버헤드 화염·살라만더 그릴 시장) ─ */
+/* price=국내 소비자가/직수입 환산가(₩), temp=최고화력(°C), fit=가정용 적합도 1~10, seg=포지션 */
+const DEFAULT_COMP = [
+  {id:'c0', brand:'BRATEN (자사)', origin:'대한민국', fuel:'가스(화염)', temp:800, price:390000, fit:10, seg:'가정용·가성비', channel:'자사몰·스마트스토어·쿠팡', pro:'국내 브랜드·A/S·합리적 가격', con:'브랜드 인지도 구축 필요', us:true},
+  {id:'c1', brand:'Otto Wilde O.F.B.', origin:'독일', fuel:'가스(프로판)', temp:890, price:1650000, fit:7, seg:'프리미엄', channel:'해외직구', pro:'상업용 빌드·독립 2버너·균일 열분포', con:'초고가·세척 어려움·직구 A/S', us:false},
+  {id:'c2', brand:'Beefer One', origin:'독일', fuel:'가스(프로판)', temp:847, price:970000, fit:6, seg:'프리미엄', channel:'해외직구', pro:'원조 800℃ 브로일러·브랜드 파워', con:'점화 불편·그레이트 조절 번거로움', us:false},
+  {id:'c3', brand:'Beefer XL', origin:'독일', fuel:'가스(프로판)', temp:773, price:2200000, fit:5, seg:'프리미엄·대형', channel:'해외직구', pro:'대형 조리면·쉬운 점화', con:'무겁고 초고가', us:false},
+  {id:'c4', brand:'Northfire Inferno', origin:'미국', fuel:'가스(프로판)', temp:919, price:690000, fit:7, seg:'가성비', channel:'해외직구(아마존)', pro:'최고 화력·가성비·간편 세척', con:'그레이트 정렬 이슈·국내 미유통', us:false},
+  {id:'c5', brand:'Otto Grill Original', origin:'독일', fuel:'가스(프로판)', temp:816, price:900000, fit:6, seg:'시어링 특화', channel:'해외직구', pro:'시어링 특화·컴팩트', con:'용도 제한적·직구', us:false},
+  {id:'c6', brand:'업소용 살라만더 (HES-938 등)', origin:'중국/OEM', fuel:'전기', temp:300, price:340000, fit:3, seg:'업소용', channel:'쿠팡·11번가·알리', pro:'저가·국내 즉시 구매', con:'낮은 화력·업소용·가정 부적합', us:false},
+];
+
+/* ─ 레퍼런스 출처 ─ */
+const COMP_REFS = [
+  {t:'Grillseeker — Beefer vs Inferno vs Otto Wilde 비교 리뷰', u:'https://www.grillseeker.com/infrared-grill-showdown-beefer-grill-vs-inferno-grill-vs-otto-wilde-grill/', d:'화력·가격·강약점 비교 (Otto Wilde $1,195 / Beefer $699 / Northfire $499 / Beefer XL $1,599)'},
+  {t:'Otto Wilde Grillers 공식', u:'https://www.ottowildegrillers.com/', d:'O.F.B. 1634°F(890℃) 오버파이어드 브로일러 스펙'},
+  {t:'AmazingRibs — Otto Grill Original 리뷰', u:'https://amazingribs.com/grill-tailgater/otto-grill/', d:'시어링 특화 브로일러 성능 평가'},
+  {t:'쿠팡 — 살라만더 업소용 그릴 검색', u:'https://www.coupang.com/np/search?q=%EC%82%B4%EB%9D%BC%EB%A7%8C%EB%8D%94', d:'국내 유통 살라만더 가격대 ₩260,000~415,000 (업소용 전기)'},
+];
+
+let SALES, STOCK, TRANSIT, PROMO, GB, ADS, TEAM, COMP;
 function loadAll(){
   SALES  = store.get('sales', DEFAULT_SALES);
   STOCK  = store.get('stock', DEFAULT_STOCK);
@@ -602,6 +678,7 @@ function loadAll(){
   GB     = store.get('gb', DEFAULT_GB);
   ADS    = store.get('ads', DEFAULT_ADS);
   TEAM   = store.get('team', DEFAULT_TEAM);
+  COMP   = store.get('comp', DEFAULT_COMP);
 }
 
 /* ══════════ 유틸 ══════════ */
@@ -616,7 +693,7 @@ const CT={color:'#8a847e', font:{family:'Pretendard',size:11}};
 const GRID={color:'#f0ede8'};
 
 /* ══════════ 네비게이션 ══════════ */
-const PAGE_TITLES = {overview:'개요', sales:'매출 시트', inventory:'재고 연동화', promotions:'프로모션 일정', groupbuy:'공구 일정', ads:'디지털 광고', team:'직원 관리'};
+const PAGE_TITLES = {overview:'개요', sales:'매출 시트', inventory:'재고 연동화', promotions:'프로모션 일정', groupbuy:'공구 일정', ads:'디지털 광고', team:'직원 관리', competitors:'경쟁자 분석'};
 let currentSection = 'overview';
 function nav(id, el){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -629,7 +706,8 @@ function nav(id, el){
 }
 function renderSection(id){
   ({overview:renderOverview, sales:renderSales, inventory:renderInventory,
-    promotions:renderPromotions, groupbuy:renderGroupbuy, ads:renderAds, team:renderTeam}[id])();
+    promotions:renderPromotions, groupbuy:renderGroupbuy, ads:renderAds, team:renderTeam,
+    competitors:renderCompetitors}[id])();
 }
 
 /* ══════════ 개요 ══════════ */
@@ -907,6 +985,90 @@ function renderTeam(){
     || '<tr><td colspan="7" class="empty">직원이 없습니다</td></tr>';
 }
 
+/* ══════════ 경쟁자 분석 ══════════ */
+function segBadge(seg){
+  if(/프리미엄/.test(seg))return'b-purple'; if(/가성비/.test(seg))return'b-green';
+  if(/업소용/.test(seg))return'b-gray'; if(/가정용/.test(seg))return'b-flame';
+  return'b-blue';
+}
+function renderCompetitors(){
+  const rivals=COMP.filter(c=>!c.us);
+  const avg=rivals.length?rivals.reduce((a,c)=>a+c.price,0)/rivals.length:0;
+  const maxTemp=Math.max(...COMP.map(c=>c.temp));
+  const domestic=COMP.filter(c=>!c.us && /쿠팡|11번가|자사몰|스마트스토어|알리/.test(c.channel)).length;
+  document.getElementById('compKpis').innerHTML=kpiHtml([
+    ['추적 경쟁사', rivals.length+'개', '글로벌+국내', 'neu'],
+    ['평균 소비자가', '₩'+wonShort(avg), '경쟁사 기준', 'neu'],
+    ['최고 화력', maxTemp+'°C', COMP.find(c=>c.temp===maxTemp).brand, 'up'],
+    ['국내 유통 경쟁', domestic+'개', '직접 경쟁권', domestic<=1?'up':'neu'],
+  ]);
+
+  // 포지셔닝 맵 (버블: x=가격, y=화력, r=가정용 적합도)
+  mkChart('compMap',{
+    type:'bubble',
+    data:{datasets:COMP.map(c=>({
+      label:c.brand,
+      data:[{x:c.price,y:c.temp,r:4+c.fit*1.6}],
+      backgroundColor:c.us?'rgba(240,78,35,.85)':'rgba(138,132,126,.45)',
+      borderColor:c.us?'#f04e23':'#8a847e', borderWidth:c.us?2:1,
+    }))},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{
+        label:c=>`${c.dataset.label}: ₩${wonShort(c.parsed.x)} · ${c.parsed.y}°C`}}},
+      scales:{
+        x:{title:{display:true,text:'소비자가 (₩)',color:'#8a847e',font:{size:10}},grid:GRID,ticks:{...CT,callback:v=>wonShort(v)}},
+        y:{title:{display:true,text:'최고 화력 (°C)',color:'#8a847e',font:{size:10}},grid:GRID,ticks:CT}
+      }}
+  });
+
+  // 인사이트
+  const cheapest=rivals.reduce((a,c)=>c.price<a.price?c:a);
+  const hottest=rivals.reduce((a,c)=>c.temp>a.temp?c:a);
+  document.getElementById('compInsight').innerHTML=`
+    <div class="ins-row"><span class="ins-dot" style="background:var(--flame)"></span>
+      <div><b>가성비 × 고화력 공백</b><br><span class="c-muted">프리미엄(₩97만~220만)과 저화력 업소용(₩34만) 사이 <b>가정용 고화력</b> 구간이 비어있음 → BRATEN 포지션.</span></div></div>
+    <div class="ins-row"><span class="ins-dot" style="background:var(--green)"></span>
+      <div><b>국내 유통 우위</b><br><span class="c-muted">해외 경쟁사 대부분 직구 전용. 국내 A/S·즉시배송·KRW 결제가 차별점.</span></div></div>
+    <div class="ins-row"><span class="ins-dot" style="background:var(--blue)"></span>
+      <div><b>벤치마크</b><br><span class="c-muted">최저가 ${esc(cheapest.brand)} ₩${wonShort(cheapest.price)} · 최고화력 ${esc(hottest.brand)} ${hottest.temp}°C</span></div></div>`;
+
+  // 비교표
+  document.querySelector('#compTable tbody').innerHTML=COMP.map(c=>`
+    <tr${c.us?' style="background:rgba(240,78,35,.05)"':''}>
+      <td class="fw7">${c.us?'<span class="c-flame">▎</span>':''}${esc(c.brand)}</td>
+      <td class="c-muted">${esc(c.origin)}</td><td class="c-muted">${esc(c.fuel)}</td>
+      <td class="tr fw7">${c.temp}°C</td><td class="tr fw7">₩${c.price.toLocaleString('ko-KR')}</td>
+      <td class="tc"><span class="b ${segBadge(c.seg)}">${esc(c.seg)}</span></td>
+      <td class="c-muted" style="font-size:11.5px">${esc(c.channel)}</td>
+      <td style="font-size:11.5px;white-space:normal;max-width:280px"><span class="c-green">＋ ${esc(c.pro)}</span><br><span class="c-red">－ ${esc(c.con)}</span></td>
+      <td class="tc">${c.us?'<span class="c-muted" style="font-size:11px">자사</span>':`<button class="icon-btn" onclick="openCompModal('${c.id}')">✏️</button><button class="icon-btn" onclick="delRow('comp','${c.id}')">🗑</button>`}</td>
+    </tr>`).join('');
+
+  // 레퍼런스
+  document.getElementById('compRefs').innerHTML=COMP_REFS.map(r=>`
+    <div class="ref-row"><span class="ref-ic">🔗</span>
+      <div><a href="${r.u}" target="_blank" rel="noopener" class="ref-link">${esc(r.t)}</a>
+      <div class="c-muted" style="font-size:11.5px;margin-top:2px">${esc(r.d)}</div></div></div>`).join('');
+}
+function openCompModal(id){
+  const c=id?COMP.find(x=>x.id===id):{brand:'',origin:'',fuel:'가스(프로판)',temp:800,price:0,fit:6,seg:'가성비',channel:'',pro:'',con:''};
+  openModal(id?'경쟁사 수정':'경쟁사 추가',
+    field('브랜드','cBrand',c.brand)+field('원산지','cOrigin',c.origin)
+    +field('연료','cFuel',c.fuel)
+    +field('최고 화력 (°C)','cTemp',c.temp,'number')+field('소비자가 (₩)','cPrice',c.price,'number')
+    +field('가정용 적합도 (1~10)','cFit',c.fit,'number')
+    +field('포지션','cSeg',c.seg,'select',['프리미엄','가성비','가정용·가성비','시어링 특화','업소용','프리미엄·대형'])
+    +field('국내 유통','cChannel',c.channel)
+    +field('강점','cPro',c.pro)+field('약점','cCon',c.con),
+    ()=>{
+      const o={brand:val('cBrand'),origin:val('cOrigin'),fuel:val('cFuel'),temp:numv('cTemp'),
+        price:numv('cPrice'),fit:numv('cFit'),seg:val('cSeg'),channel:val('cChannel'),pro:val('cPro'),con:val('cCon'),us:false};
+      if(!o.brand)return alert('브랜드를 입력하세요.');
+      if(id){Object.assign(c,o);}else{COMP.push({id:uid(),...o});}
+      store.set('comp',COMP); closeModal(); renderCompetitors();
+    });
+}
+
 /* ══════════ 모달 & CRUD ══════════ */
 const modal=document.getElementById('modal');
 function closeModal(){ modal.classList.add('hidden'); }
@@ -927,10 +1089,11 @@ const numv=id=>+document.getElementById(id).value||0;
 function delRow(kind, id){
   if(!confirm('삭제하시겠습니까?'))return;
   const map={sales:()=>SALES=SALES.filter(r=>r.id!==id), transit:()=>TRANSIT=TRANSIT.filter(r=>r.id!==id),
-    promo:()=>PROMO=PROMO.filter(r=>r.id!==id), gb:()=>GB=GB.filter(r=>r.id!==id), team:()=>TEAM=TEAM.filter(r=>r.id!==id)};
+    promo:()=>PROMO=PROMO.filter(r=>r.id!==id), gb:()=>GB=GB.filter(r=>r.id!==id), team:()=>TEAM=TEAM.filter(r=>r.id!==id),
+    comp:()=>COMP=COMP.filter(r=>r.id!==id)};
   map[kind]();
-  const skey={sales:'sales',transit:'transit',promo:'promo',gb:'gb',team:'team'}[kind];
-  store.set(skey, {sales:SALES,transit:TRANSIT,promo:PROMO,gb:GB,team:TEAM}[kind]);
+  const skey={sales:'sales',transit:'transit',promo:'promo',gb:'gb',team:'team',comp:'comp'}[kind];
+  store.set(skey, {sales:SALES,transit:TRANSIT,promo:PROMO,gb:GB,team:TEAM,comp:COMP}[kind]);
   renderSection(currentSection);
 }
 
