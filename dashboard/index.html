@@ -123,6 +123,16 @@ th.sortable{cursor:pointer;user-select:none}th.sortable:hover{color:var(--flame)
 .ref-link{color:var(--flame);font-weight:600;font-size:12.5px;text-decoration:none}
 .ref-link:hover{text-decoration:underline}
 
+/* ── Margin simulation ── */
+.mg-form{display:grid;grid-template-columns:1fr 1fr;gap:13px 16px;margin-top:6px}
+.mg-fld{display:flex;flex-direction:column;gap:5px}
+.mg-fld label{font-size:11px;color:var(--muted);font-weight:600}
+.mg-fld input{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:13.5px;font-weight:600;font-variant-numeric:tabular-nums;font-family:inherit;background:#fff;color:var(--text)}
+.mg-fld input:focus{outline:none;border-color:var(--flame);box-shadow:0 0 0 3px rgba(240,78,35,.1)}
+.mg-fee-input{width:66px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;text-align:right;font-size:12.5px;font-weight:600;font-family:inherit;font-variant-numeric:tabular-nums}
+.mg-fee-input:focus{outline:none;border-color:var(--flame)}
+.mg-note{font-size:10.5px;color:var(--muted);margin-top:11px;line-height:1.55}
+
 /* ── Inventory cards ── */
 .inv-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
 .inv-card{background:var(--card);border-radius:12px;border:1px solid var(--line);padding:15px 16px;box-shadow:var(--shadow)}
@@ -223,6 +233,7 @@ select.form-input{cursor:pointer}
     <div class="sb-section">운영 현황</div>
     <div class="nav-item active" onclick="nav('overview',this)"><span class="nav-icon">◉</span> 개요</div>
     <div class="nav-item" onclick="nav('sales',this)"><span class="nav-icon">📈</span> 매출 시트</div>
+    <div class="nav-item" onclick="nav('margin',this)"><span class="nav-icon">🧮</span> 마진 시뮬레이션</div>
     <div class="nav-item" onclick="nav('inventory',this)"><span class="nav-icon">📦</span> 재고 연동화</div>
 
     <div class="sb-section">마케팅</div>
@@ -544,6 +555,73 @@ select.form-input{cursor:pointer}
     </div>
   </section>
 
+  <!-- ═══════════ 마진 시뮬레이션 ═══════════ -->
+  <section class="page-section" id="sec-margin">
+    <div class="sec-head">
+      <div>
+        <div class="sec-title">마진 시뮬레이션</div>
+        <div class="sec-sub">판매가·원가·플랫폼 수수료·광고비를 조정하며 채널별 순마진을 실시간 계산</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-ghost btn-sm" onclick="resetMargin()">↺ 기본값</button>
+        <button class="btn-primary btn-sm" id="mgSaveBtn" onclick="saveMargin()">💾 설정 저장</button>
+      </div>
+    </div>
+    <div class="kpi-grid" id="mgKpis"></div>
+    <div class="g2">
+      <div class="card">
+        <div class="card-title">기본 입력</div>
+        <div class="card-sub">값을 바꾸면 즉시 재계산됩니다 · 판매가 1대 기준</div>
+        <div class="mg-form">
+          <div class="mg-fld"><label>판매가 (₩)</label><input id="mgPrice" type="number" oninput="marginLive()"></div>
+          <div class="mg-fld"><label>제조원가 COGS (₩)</label><input id="mgCogs" type="number" oninput="marginLive()"></div>
+          <div class="mg-fld"><label>배송비 (건당 ₩)</label><input id="mgShip" type="number" oninput="marginLive()"></div>
+          <div class="mg-fld"><label>포장/부자재 (₩)</label><input id="mgPack" type="number" oninput="marginLive()"></div>
+          <div class="mg-fld"><label>광고비 비율 (매출 %)</label><input id="mgAd" type="number" step="0.1" oninput="marginLive()"></div>
+          <div class="mg-fld"><label>반품률 (%)</label><input id="mgReturn" type="number" step="0.1" oninput="marginLive()"></div>
+          <div class="mg-fld"><label>월 고정비 (인건비·임대 등, ₩)</label><input id="mgFixed" type="number" oninput="marginLive()"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">채널별 수수료 설정 (%)</div>
+        <div class="card-sub">판매수수료 + 결제(PG)수수료 · 채널마다 직접 조정</div>
+        <div class="tbl-wrap">
+          <table id="mgFeeTable">
+            <thead><tr><th>채널</th><th class="tr">판매수수료</th><th class="tr">결제수수료</th><th class="tr">합계</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="mg-note">참고 요율(2026): 자사몰 PG ~3.3% · 스마트스토어(네이버) 주문+결제 ~5% · 쿠팡 가전 카테고리 ~7~11%. 실제 카테고리·정산조건에 따라 상이하므로 직접 입력해 사용하세요.</p>
+      </div>
+    </div>
+    <div class="g21">
+      <div class="card">
+        <div class="card-title">채널별 건당 순이익</div>
+        <div class="card-sub">현재 입력 기준 (₩)</div>
+        <div class="ch ch-260"><canvas id="mgBar"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">비용 구성</div>
+        <div class="seg" id="mgChSel" style="margin:2px 0 12px"></div>
+        <div class="ch ch-220"><canvas id="mgDonut"></canvas></div>
+      </div>
+    </div>
+    <div class="card full">
+      <div class="card-title">채널별 손익 상세</div>
+      <div class="card-sub">판매가 1대 기준 · 월 고정비 반영 손익분기 판매량</div>
+      <div class="tbl-wrap">
+        <table id="mgTable">
+          <thead><tr>
+            <th>채널</th><th class="tr">판매가</th><th class="tr">원가</th><th class="tr">물류/포장</th>
+            <th class="tr">플랫폼수수료</th><th class="tr">광고비</th><th class="tr">반품손실</th>
+            <th class="tr">순이익</th><th class="tr">마진율</th><th class="tr">손익분기(대/월)</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
   </div>
 </div>
 
@@ -669,7 +747,17 @@ const COMP_REFS = [
   {t:'쿠팡 — 살라만더 업소용 그릴 검색', u:'https://www.coupang.com/np/search?q=%EC%82%B4%EB%9D%BC%EB%A7%8C%EB%8D%94', d:'국내 유통 살라만더 가격대 ₩260,000~415,000 (업소용 전기)'},
 ];
 
-let SALES, STOCK, TRANSIT, PROMO, GB, ADS, TEAM, COMP;
+/* ─ 마진 시뮬레이션 (커스터마이징 가능) ─ */
+const DEFAULT_MARGIN = {
+  price:390000, cogs:165000, ship:3500, pack:2500, adRate:12, returnRate:3, fixed:8000000,
+  channels:[
+    {name:'자사몰', sellFee:0,   payFee:3.3},
+    {name:'스마트스토어', sellFee:2, payFee:3.3},
+    {name:'쿠팡', sellFee:7.8, payFee:0},
+  ]
+};
+
+let SALES, STOCK, TRANSIT, PROMO, GB, ADS, TEAM, COMP, M;
 function loadAll(){
   SALES  = store.get('sales', DEFAULT_SALES);
   STOCK  = store.get('stock', DEFAULT_STOCK);
@@ -679,6 +767,7 @@ function loadAll(){
   ADS    = store.get('ads', DEFAULT_ADS);
   TEAM   = store.get('team', DEFAULT_TEAM);
   COMP   = store.get('comp', DEFAULT_COMP);
+  M      = store.get('margin', DEFAULT_MARGIN);
 }
 
 /* ══════════ 유틸 ══════════ */
@@ -693,7 +782,7 @@ const CT={color:'#8a847e', font:{family:'Pretendard',size:11}};
 const GRID={color:'#f0ede8'};
 
 /* ══════════ 네비게이션 ══════════ */
-const PAGE_TITLES = {overview:'개요', sales:'매출 시트', inventory:'재고 연동화', promotions:'프로모션 일정', groupbuy:'공구 일정', ads:'디지털 광고', team:'직원 관리', competitors:'경쟁자 분석'};
+const PAGE_TITLES = {overview:'개요', sales:'매출 시트', margin:'마진 시뮬레이션', inventory:'재고 연동화', promotions:'프로모션 일정', groupbuy:'공구 일정', ads:'디지털 광고', team:'직원 관리', competitors:'경쟁자 분석'};
 let currentSection = 'overview';
 function nav(id, el){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -705,7 +794,7 @@ function nav(id, el){
   setTimeout(()=>renderSection(id), 30);
 }
 function renderSection(id){
-  ({overview:renderOverview, sales:renderSales, inventory:renderInventory,
+  ({overview:renderOverview, sales:renderSales, margin:renderMargin, inventory:renderInventory,
     promotions:renderPromotions, groupbuy:renderGroupbuy, ads:renderAds, team:renderTeam,
     competitors:renderCompetitors}[id])();
 }
@@ -1067,6 +1156,109 @@ function openCompModal(id){
       if(id){Object.assign(c,o);}else{COMP.push({id:uid(),...o});}
       store.set('comp',COMP); closeModal(); renderCompetitors();
     });
+}
+
+/* ══════════ 마진 시뮬레이션 ══════════ */
+let mgDonutCh = 0;
+function marginCalc(c){
+  const p=M.price;
+  const platform=p*(c.sellFee+c.payFee)/100;
+  const ad=p*M.adRate/100;
+  const ret=(M.ship+M.pack)*M.returnRate/100;   // 반품 건당 물류·부자재 손실 추정
+  const logistics=M.ship+M.pack;
+  const cost=M.cogs+logistics+platform+ad+ret;
+  const profit=p-cost;
+  const bep=profit>0?Math.ceil(M.fixed/profit):null;   // 월 고정비 회수 판매량
+  return {platform,ad,ret,logistics,cost,profit,rate:p?profit/p:0,bep};
+}
+function readMarginInputs(){
+  M.price=numv('mgPrice'); M.cogs=numv('mgCogs'); M.ship=numv('mgShip'); M.pack=numv('mgPack');
+  M.adRate=+document.getElementById('mgAd').value||0;
+  M.returnRate=+document.getElementById('mgReturn').value||0;
+  M.fixed=numv('mgFixed');
+  M.channels.forEach((c,i)=>{
+    c.sellFee=+document.getElementById('mgSell'+i).value||0;
+    c.payFee =+document.getElementById('mgPay'+i).value||0;
+  });
+}
+function renderMargin(){
+  // 입력값 채우기
+  const set=(id,v)=>document.getElementById(id).value=v;
+  set('mgPrice',M.price); set('mgCogs',M.cogs); set('mgShip',M.ship); set('mgPack',M.pack);
+  set('mgAd',M.adRate); set('mgReturn',M.returnRate); set('mgFixed',M.fixed);
+  // 수수료 테이블
+  document.querySelector('#mgFeeTable tbody').innerHTML=M.channels.map((c,i)=>`
+    <tr><td class="fw7">${esc(c.name)}</td>
+    <td class="tr"><input class="mg-fee-input" id="mgSell${i}" type="number" step="0.1" value="${c.sellFee}" oninput="marginLive()"> %</td>
+    <td class="tr"><input class="mg-fee-input" id="mgPay${i}" type="number" step="0.1" value="${c.payFee}" oninput="marginLive()"> %</td>
+    <td class="tr fw7" id="mgFeeSum${i}">${(c.sellFee+c.payFee).toFixed(1)}%</td></tr>`).join('');
+  // 채널 선택 세그
+  if(mgDonutCh>=M.channels.length)mgDonutCh=0;
+  document.getElementById('mgChSel').innerHTML=M.channels.map((c,i)=>`<button data-i="${i}" class="${i===mgDonutCh?'on':''}">${esc(c.name)}</button>`).join('');
+  document.querySelectorAll('#mgChSel button').forEach(b=>b.onclick=()=>{
+    mgDonutCh=+b.dataset.i;
+    document.querySelectorAll('#mgChSel button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on'); marginCompute();
+  });
+  marginCompute();
+}
+function marginLive(){
+  readMarginInputs();
+  M.channels.forEach((c,i)=>{const el=document.getElementById('mgFeeSum'+i); if(el)el.textContent=(c.sellFee+c.payFee).toFixed(1)+'%';});
+  marginCompute();
+}
+function marginCompute(){
+  const res=M.channels.map(c=>({name:c.name,...marginCalc(c)}));
+  const best=res.reduce((a,b)=>b.rate>a.rate?b:a);
+  const worst=res.reduce((a,b)=>b.rate<a.rate?b:a);
+  const avgRate=res.reduce((a,b)=>a+b.rate,0)/res.length;
+  const beps=res.filter(r=>r.bep!=null);
+  const minBep=beps.length?beps.reduce((a,b)=>b.bep<a.bep?b:a):null;
+  document.getElementById('mgKpis').innerHTML=kpiHtml([
+    ['최고 마진 채널', esc(best.name), pct(best.rate)+' · 건당 '+won(best.profit), best.profit>0?'up':'dn'],
+    ['평균 마진율', pct(avgRate), '3채널 평균', avgRate>0?'up':'dn'],
+    ['최저 마진 채널', esc(worst.name), pct(worst.rate), worst.profit>0?'neu':'dn'],
+    ['손익분기 (최소)', minBep?minBep.bep.toLocaleString()+'대/월':'—', minBep?esc(minBep.name)+' 기준':'전 채널 적자', minBep?'up':'dn'],
+  ]);
+  // 채널별 순이익 막대
+  mkChart('mgBar',{
+    type:'bar',
+    data:{labels:res.map(r=>r.name),datasets:[{
+      data:res.map(r=>Math.round(r.profit)),
+      backgroundColor:res.map(r=>r.profit>=0?(CH_COLORS[r.name]||'#f04e23'):'#e5484d'),
+      borderRadius:6,barThickness:46}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' 건당 순이익 '+won(c.parsed.y)+' ('+pct(res[c.dataIndex].rate)+')'}}},
+      scales:{x:{grid:{display:false},ticks:CT},y:{grid:GRID,ticks:{...CT,callback:v=>wonShort(v)}}}}
+  });
+  // 비용 구성 도넛 (선택 채널)
+  const c=res[mgDonutCh];
+  mkChart('mgDonut',{
+    type:'doughnut',
+    data:{labels:['제조원가','물류/포장','플랫폼수수료','광고비','반품손실','순이익'],
+      datasets:[{data:[M.cogs,c.logistics,Math.round(c.platform),Math.round(c.ad),Math.round(c.ret),Math.max(Math.round(c.profit),0)],
+      backgroundColor:['#8a847e','#3b82f6','#f04e23','#8b5cf6','#e5484d','#2ec36e'],borderWidth:2,borderColor:'#fff'}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'58%',
+      plugins:{legend:{position:'bottom',labels:{...CT,boxWidth:10,padding:9,font:{family:'Pretendard',size:10.5}}},
+        tooltip:{callbacks:{label:x=>' '+x.label+': '+won(x.parsed)+' ('+((x.parsed/M.price)*100).toFixed(1)+'%)'}}}}
+  });
+  // 상세 표
+  document.querySelector('#mgTable tbody').innerHTML=res.map(r=>`
+    <tr><td class="fw7">${esc(r.name)}</td>
+    <td class="tr">${won(M.price)}</td><td class="tr c-muted">${won(M.cogs)}</td><td class="tr c-muted">${won(r.logistics)}</td>
+    <td class="tr c-muted">${won(r.platform)}</td><td class="tr c-muted">${won(r.ad)}</td><td class="tr c-muted">${won(r.ret)}</td>
+    <td class="tr fw7 ${r.profit>=0?'c-green':'c-red'}">${won(r.profit)}</td>
+    <td class="tr fw7 ${r.rate>=0?'c-green':'c-red'}">${pct(r.rate)}</td>
+    <td class="tr">${r.bep!=null?r.bep.toLocaleString()+'대':'<span class="c-red">적자</span>'}</td></tr>`).join('');
+}
+function saveMargin(){
+  readMarginInputs(); store.set('margin',M);
+  const b=document.getElementById('mgSaveBtn'), t=b.textContent;
+  b.textContent='저장됨 ✓'; setTimeout(()=>b.textContent=t,1500);
+}
+function resetMargin(){
+  if(!confirm('마진 설정을 기본값으로 되돌릴까요?'))return;
+  M=structuredClone(DEFAULT_MARGIN); store.set('margin',M); mgDonutCh=0; renderMargin();
 }
 
 /* ══════════ 모달 & CRUD ══════════ */
